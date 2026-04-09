@@ -1,0 +1,98 @@
+[
+  {
+    "id": "p1",
+    "title": "سماعات لاسلكية بتقنية إلغاء الضوضاء",
+    "description": "مثالية للعمل من المنزل والتجارة الإلكترونية — جودة صوت عالية وبطارية تدوم طوال اليوم.",
+    "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
+    "images": [
+      "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&h=800&fit=crop"
+    ],
+    "video": "https://www.w3schools.com/html/mov_bbb.mp4",
+    "priceSar": 79,
+    "priceAed": 77,
+    "oldPriceSar": 199,
+    "oldPriceAed": 195,
+    "rating": 4.7,
+    "reviewCount": 842,
+    "soldCount": 12400,
+    "markets": ["SA"],
+    "quantityPromos": [
+      { "quantity": 2, "priceSar": 140, "priceAed": 137 },
+      { "quantity": 3, "priceSar": 200, "priceAed": 196 },
+      { "quantity": 4, "priceSar": 250, "priceAed": 245 }
+    ]
+  },
+  {
+    "id": "p2",
+    "title": "ساعة ذكية رياضية مع تتبع النوم",
+    "description": "تتبع خطواتك وطلباتك — خيار مربح لمتجرك على تاجر أو منصات البيع بالعمولة.",
+    "image": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=400&h=400&fit=crop",
+    "images": [
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=800&fit=crop"
+    ],
+    "priceSar": 129,
+    "priceAed": 126,
+    "oldPriceSar": 289,
+    "oldPriceAed": 283,
+    "rating": 4.5,
+    "reviewCount": 1203,
+    "soldCount": 8900,
+    "markets": ["SA"]
+  },
+  {
+    "id": "p3",
+    "title": "مصباح مكتب LED قابل للتعتيم",
+    "description": "إضاءة مريحة للعمل لساعات طويلة أمام الشاشة — منتج مناسب للشحن السريع في الخليج.",
+    "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400&h=400&fit=crop",
+    "priceSar": 45,
+    "priceAed": 44,
+    "oldPriceSar": 99,
+    "oldPriceAed": 97,
+    "rating": 4.8,
+    "reviewCount": 356,
+    "soldCount": 5200,
+    "markets": ["AE"]
+  },
+  {
+    "id": "p4",
+    "title": "حقيبة ظهر لابتوب مقاومة للماء",
+    "description": "تصميم عملي لرواد الأعمال والمسوقين — حجم مناسب للطيران بين الرياض ودبي.",
+    "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop",
+    "priceSar": 89,
+    "priceAed": 87,
+    "oldPriceSar": 179,
+    "oldPriceAed": 175,
+    "rating": 4.6,
+    "reviewCount": 672,
+    "soldCount": 3100,
+    "markets": ["AE"]
+  },
+  {
+    "id": "p5",
+    "title": "حامل هاتف للسيارة بمغناطيس قوي",
+    "description": "أكثر المنتجات طلباً في حملات التيك توك — تركيب سريع وثبات أثناء التوصيل.",
+    "image": "https://images.unsplash.com/photo-1583394838336-acd977736f7f?w=400&h=400&fit=crop",
+    "priceSar": 35,
+    "priceAed": 34,
+    "oldPriceSar": 79,
+    "oldPriceAed": 77,
+    "rating": 4.4,
+    "reviewCount": 2891,
+    "soldCount": 15600,
+    "markets": ["SA", "AE"]
+  },
+  {
+    "id": "p6",
+    "title": "طقم أدوات مطبخ سيليكون 12 قطعة",
+    "description": "مقاوم للحرارة — مناسب للعائلات في السعودية والإمارات، هامش ربح جيد للبائعين أونلاين.",
+    "image": "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=400&h=400&fit=crop",
+    "priceSar": 55,
+    "priceAed": 54,
+    "oldPriceSar": 119,
+    "oldPriceAed": 117,
+    "rating": 4.9,
+    "reviewCount": 445,
+    "soldCount": 7800,
+    "markets": ["SA", "AE"]
+  }
+]
