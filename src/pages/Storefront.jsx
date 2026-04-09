@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import AdminConfigLink from '../components/AdminConfigLink.jsx'
 import CheckoutModal from '../components/CheckoutModal.jsx'
 import CountryDropdown from '../components/CountryDropdown.jsx'
 import CountryPromptModal from '../components/CountryPromptModal.jsx'
@@ -439,7 +438,6 @@ export default function Storefront() {
                 <span className="text-xl font-extrabold tracking-tight text-temu sm:text-2xl">
                   تاجر<span className="text-gray-800">ستور</span>
                 </span>
-                <AdminConfigLink />
               </div>
               {country && (
                 <div className="sm:hidden">
@@ -697,14 +695,6 @@ export default function Storefront() {
           )}
         </div>
 
-        <p className="mt-8 pb-4 text-center">
-          <Link
-            to="/admin"
-            className="text-xs text-gray-400 underline-offset-2 hover:text-temu hover:underline"
-          >
-            لوحة الإدارة
-          </Link>
-        </p>
       </main>
 
       <a
