@@ -434,7 +434,7 @@ export default function Storefront() {
             <div className="flex items-center justify-between gap-3 sm:justify-start sm:gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-xl font-extrabold tracking-tight text-temu sm:text-2xl">
-                  تاجر<span className="text-gray-800">ستور</span>
+                  OurShoping
                 </span>
               </div>
               {country && (

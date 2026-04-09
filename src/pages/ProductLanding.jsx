@@ -142,10 +142,10 @@ export default function ProductLanding() {
 
   useEffect(() => {
     if (!product) {
-      document.title = 'منتج غير موجود | تاجرستور'
+      document.title = 'منتج غير موجود | OurShoping'
       return
     }
-    const title = `${product.title} | تاجرستور`
+    const title = `${product.title} | OurShoping`
     document.title = title
     const desc =
       typeof product.description === 'string'
