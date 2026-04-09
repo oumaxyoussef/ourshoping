@@ -366,9 +366,9 @@ export default function Admin() {
     setBannerMsg('تم حفظ بانر الصفحة الرئيسية.')
   }
 
-  const resetBanners = () => {
-    resetHeaderBannersToDefault()
-    setBannerUrls(getHeaderBanners())
+  const resetBanners = async () => {
+    await resetHeaderBannersToDefault()
+    setBannerUrls(await getHeaderBanners())
     setBannerMsg('تمت استعادة الصور الافتراضية.')
   }
 
@@ -389,7 +389,7 @@ export default function Admin() {
     e.target.value = ''
   }
 
-  const submitNewCategory = (e) => {
+  const submitNewCategory = async (e) => {
     e.preventDefault()
     setCatMsg('')
     const name = newCatName.trim()
@@ -410,11 +410,11 @@ export default function Admin() {
       setCatMsg(`الحد الأقصى ${MAX_CATEGORIES} تصنيفات`)
       return
     }
-    addCategory({ nameAr: name, imageUrl: newCatImgUrl.trim() || newCatImgDraft })
+    await addCategory({ nameAr: name, imageUrl: newCatImgUrl.trim() || newCatImgDraft })
     setNewCatName('')
     setNewCatImgDraft('')
     setNewCatImgUrl('')
-    setShopCategories(getCategories())
+    setShopCategories(await getCategories())
     setCatMsg('تمت إضافة التصنيف.')
   }
 
@@ -618,7 +618,7 @@ export default function Admin() {
       }
       resetProductForm()
       setProductMsg('تم حفظ التعديلات.')
-      setExtra(getExtraProducts())
+      setExtra(await getExtraProducts())
       return
     }
 
@@ -629,7 +629,7 @@ export default function Admin() {
     }
     resetProductForm()
     setProductMsg('تمت إضافة المنتج.')
-    setExtra(getExtraProducts())
+    setExtra(await getExtraProducts())
   }
 
   const availableInputCurrencies = useMemo(() => {
@@ -914,9 +914,9 @@ export default function Admin() {
                 <span className="min-w-0 flex-1 font-semibold text-gray-900">{c.nameAr}</span>
                 <button
                   type="button"
-                  onClick={() => {
-                    removeCategory(c.id)
-                    setShopCategories(getCategories())
+                  onClick={async () => {
+                    await removeCategory(c.id)
+                    setShopCategories(await getCategories())
                   }}
                   className="shrink-0 text-sm font-bold text-red-600 hover:underline"
                 >
@@ -980,8 +980,8 @@ export default function Admin() {
                           onClick={async () => {
                             await restoreProductFromTrash(entry.id)
                             setTrashList(getTrash())
-                            setExtra(getExtraProducts())
-                            setFeaturedIds(getFeaturedProductIds())
+                            setExtra(await getExtraProducts())
+                            setFeaturedIds(await getFeaturedProductIds())
                             setStoreTick((t) => t + 1)
                             setProductMsg('تمت استعادة المنتج إلى المتجر.')
                           }}
@@ -1219,7 +1219,7 @@ export default function Admin() {
               )}
             </div>
             <ul className="max-h-72 space-y-2 overflow-y-auto pe-1 sm:max-h-96">
-              {getMergedProducts().map((p) => {
+              {allProducts.map((p) => {
                 const thumb = getProductPhotos(p)[0]
                 const checked = featuredIds.includes(p.id)
                 return (
@@ -1231,9 +1231,9 @@ export default function Admin() {
                       id={`feat-${p.id}`}
                       type="checkbox"
                       checked={checked}
-                      onChange={() => {
-                        toggleFeaturedProductId(p.id)
-                        setFeaturedIds(getFeaturedProductIds())
+                      onChange={async () => {
+                        await toggleFeaturedProductId(p.id)
+                        setFeaturedIds(await getFeaturedProductIds())
                       }}
                       className="h-4 w-4 shrink-0 rounded border-gray-300 text-temu focus:ring-temu"
                     />
@@ -1272,7 +1272,7 @@ export default function Admin() {
             التخزين.
           </p>
           <ul className="max-h-80 space-y-2 overflow-y-auto rounded-xl border border-gray-200 bg-white p-3 sm:max-h-96">
-            {getMergedProducts().map((p) => {
+            {allProducts.map((p) => {
               const thumb = getProductPhotos(p)[0]
               const isBase = !String(p.id).startsWith('custom-')
               return (
@@ -1325,8 +1325,8 @@ export default function Admin() {
                           return
                         if (await softDeleteProduct(p.id)) {
                           setTrashList(getTrash())
-                          setFeaturedIds(getFeaturedProductIds())
-                          setExtra(getExtraProducts())
+                          setFeaturedIds(await getFeaturedProductIds())
+                          setExtra(await getExtraProducts())
                           setStoreTick((t) => t + 1)
                           if (editingProductId === p.id) {
                             resetProductForm()
@@ -1370,7 +1370,7 @@ export default function Admin() {
                     type="button"
                     onClick={async () => {
                       await removeProductEdit(editingProductId)
-                      const fresh = getMergedProducts().find((x) => x.id === editingProductId)
+                      const fresh = (await getMergedProducts()).find((x) => x.id === editingProductId)
                       if (fresh) beginEditProduct(fresh)
                       setProductMsg('تمت استعادة القيم الافتراضية من الملف.')
                       setStoreTick((t) => t + 1)
@@ -1881,8 +1881,8 @@ export default function Admin() {
                           return
                         if (await softDeleteProduct(p.id)) {
                           setTrashList(getTrash())
-                          setFeaturedIds(getFeaturedProductIds())
-                          setExtra(getExtraProducts())
+                          setFeaturedIds(await getFeaturedProductIds())
+                          setExtra(await getExtraProducts())
                           setStoreTick((t) => t + 1)
                           if (editingProductId === p.id) resetProductForm()
                           setProductMsg('تم نقل المنتج إلى سلة المحذوفات.')
