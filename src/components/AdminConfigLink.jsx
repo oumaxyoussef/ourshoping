@@ -30,7 +30,7 @@ function GearIcon({ className }) {
 export default function AdminConfigLink({ className = '' }) {
   return (
     <Link
-      to="/Admin123@"
+      to="/Admin123"
       className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:border-temu hover:bg-orange-50 hover:text-temu sm:h-10 sm:w-10 ${className}`}
       title="الإدارة والإعدادات — تعديل المنتجات وكود المنتج"
       aria-label="الإدارة والإعدادات"
