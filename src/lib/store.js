@@ -20,6 +20,7 @@ export const DEFAULT_HEADER_BANNERS = [
 
 async function sbGetConfig(key, fallback) {
   try {
+    if (!supabase) return fallback
     const { data } = await supabase.from('store_config').select('value').eq('key', key).single()
     return data ? data.value : fallback
   } catch {
@@ -28,6 +29,7 @@ async function sbGetConfig(key, fallback) {
 }
 
 async function sbSetConfig(key, value) {
+  if (!supabase) return
   await supabase.from('store_config').upsert({ key, value })
 }
 
@@ -157,6 +159,7 @@ let trashCache = null
 
 async function readExtraRaw() {
   if (extraProductsCache !== null) return extraProductsCache
+  if (!supabase) { extraProductsCache = []; return [] }
   const { data } = await supabase.from('extra_products').select('id, data')
   extraProductsCache = Array.isArray(data) ? data.map((r) => ({ ...r.data, id: r.id })) : []
   return extraProductsCache
@@ -164,6 +167,7 @@ async function readExtraRaw() {
 
 async function getEditsMap() {
   if (productEditsCache !== null) return productEditsCache
+  if (!supabase) { productEditsCache = {}; return {} }
   const { data } = await supabase.from('product_edits').select('product_id, data')
   productEditsCache = {}
   if (Array.isArray(data)) data.forEach((r) => { productEditsCache[r.product_id] = r.data })
@@ -172,6 +176,7 @@ async function getEditsMap() {
 
 async function persistEdits(edits) {
   productEditsCache = edits
+  if (!supabase) return
   const rows = Object.entries(edits).map(([product_id, data]) => ({ product_id, data }))
   if (rows.length > 0) await supabase.from('product_edits').upsert(rows)
 }
@@ -179,6 +184,7 @@ async function persistEdits(edits) {
 async function persistTrash(entries) {
   const clean = entries.slice(0, MAX_TRASH_ITEMS)
   trashCache = clean
+  if (!supabase) return
   if (clean.length > 0) {
     await supabase.from('trash').upsert(clean.map((t) => ({ id: t.id, deleted_at: t.deletedAt, product: t.product })))
   } else {
@@ -188,6 +194,7 @@ async function persistTrash(entries) {
 
 export async function hydrateStoreCaches() {
   await Promise.all([readExtraRaw(), getEditsMap()])
+  if (!supabase) { trashCache = []; return }
   const { data: trashData } = await supabase.from('trash').select('id, deleted_at, product')
   trashCache = Array.isArray(trashData)
     ? trashData.map((r) => ({ id: r.id, deletedAt: r.deleted_at, product: r.product }))
@@ -287,11 +294,11 @@ export async function softDeleteProduct(productId) {
 
   if (id.startsWith('custom-')) {
     extraProductsCache = (await readExtraRaw()).filter((p) => p.id !== id)
-    await supabase.from('extra_products').delete().eq('id', id)
+    if (supabase) await supabase.from('extra_products').delete().eq('id', id)
     const edits = await getEditsMap()
     if (edits[id]) {
       delete edits[id]
-      await supabase.from('product_edits').delete().eq('product_id', id)
+      if (supabase) await supabase.from('product_edits').delete().eq('product_id', id)
     }
   } else {
     const cur = [...(await readDeletedBaseIds())]
@@ -316,7 +323,7 @@ export async function restoreProductFromTrash(productId) {
     if (!extra.some((p) => p.id === id)) {
       extra.push(entry.product)
       extraProductsCache = extra
-      await supabase.from('extra_products').upsert({ id, data: entry.product })
+      if (supabase) await supabase.from('extra_products').upsert({ id, data: entry.product })
     }
   } else {
     const cur = [...(await readDeletedBaseIds())].filter((x) => x !== id)
@@ -330,7 +337,7 @@ export async function restoreProductFromTrash(productId) {
 export async function purgeTrashEntry(productId) {
   const id = String(productId)
   trashCache = getTrash().filter((t) => t.id !== id)
-  await supabase.from('trash').delete().eq('id', id)
+  if (supabase) await supabase.from('trash').delete().eq('id', id)
   notifyStoreUpdate()
   return true
 }
@@ -341,7 +348,7 @@ export async function removeProductEdit(productId) {
   if (!edits[id]) return
   delete edits[id]
   productEditsCache = edits
-  await supabase.from('product_edits').delete().eq('product_id', id)
+  if (supabase) await supabase.from('product_edits').delete().eq('product_id', id)
   notifyStoreUpdate()
 }
 
@@ -354,11 +361,11 @@ export async function saveProduct(productId, payload) {
       if (idx < 0) return false
       raw[idx] = { ...raw[idx], ...payload }
       extraProductsCache = raw
-      await supabase.from('extra_products').upsert({ id, data: raw[idx] })
+      if (supabase) await supabase.from('extra_products').upsert({ id, data: raw[idx] })
       const edits = await getEditsMap()
       if (edits[id]) {
         delete edits[id]
-        await supabase.from('product_edits').delete().eq('product_id', id)
+        if (supabase) await supabase.from('product_edits').delete().eq('product_id', id)
       }
     } else {
       const edits = await getEditsMap()
@@ -402,7 +409,7 @@ export async function addExtraProduct(product) {
     const extra = await readExtraRaw()
     extra.push(p)
     extraProductsCache = extra
-    await supabase.from('extra_products').insert({ id, data: p })
+    if (supabase) await supabase.from('extra_products').insert({ id, data: p })
     notifyStoreUpdate()
     return true
   } catch {
@@ -413,7 +420,7 @@ export async function addExtraProduct(product) {
 export async function removeExtraProduct(id) {
   if (!String(id).startsWith('custom-')) return
   extraProductsCache = (await readExtraRaw()).filter((p) => p.id !== id)
-  await supabase.from('extra_products').delete().eq('id', id)
+  if (supabase) await supabase.from('extra_products').delete().eq('id', id)
   notifyStoreUpdate()
 }
 
