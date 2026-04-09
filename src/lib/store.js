@@ -1,19 +1,13 @@
-import baseProducts from '../data/products.json'
+﻿import baseProducts from '../data/products.json'
 import { COUNTRIES, COUNTRY_IDS } from './countries.js'
-import { idbGet, idbSet } from './idbKv.js'
+import { supabase } from './supabase.js'
 import { attachLegacyMediaFields } from './productMedia.js'
 
-const EXTRA_PRODUCTS_KEY = 'taager_extra_products'
-const ORDERS_KEY = 'taager_orders'
-const FEATURED_PRODUCT_IDS_KEY = 'taager_featured_product_ids'
-const PRODUCT_EDITS_KEY = 'taager_product_edits'
-const HEADER_BANNERS_KEY = 'taager_header_banners'
 const ADMIN_SESSION_KEY = 'taager_admin_ok'
-const TRASH_KEY = 'taager_product_trash'
-const DELETED_BASE_IDS_KEY = 'taager_deleted_base_product_ids'
 const MAX_TRASH_ITEMS = 100
 
-/** عدد صور البانر تحت الهيدر (سلايدر تلقائي) */
+// ─── Banner defaults ──────────────────────────────────────────────────────────
+
 export const MAX_HEADER_BANNERS = 6
 
 export const DEFAULT_HEADER_BANNERS = [
@@ -22,71 +16,52 @@ export const DEFAULT_HEADER_BANNERS = [
   'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=1400&q=85&auto=format&fit=crop',
 ]
 
-export function getHeaderBanners() {
-  const list = readJson(HEADER_BANNERS_KEY, null)
-  if (list == null) return [...DEFAULT_HEADER_BANNERS]
+// ─── Supabase config helpers ──────────────────────────────────────────────────
+
+async function sbGetConfig(key, fallback) {
+  try {
+    const { data } = await supabase.from('store_config').select('value').eq('key', key).single()
+    return data ? data.value : fallback
+  } catch {
+    return fallback
+  }
+}
+
+async function sbSetConfig(key, value) {
+  await supabase.from('store_config').upsert({ key, value })
+}
+
+// ─── Header Banners ───────────────────────────────────────────────────────────
+
+export async function getHeaderBanners() {
+  const list = await sbGetConfig('header_banners', null)
   if (!Array.isArray(list) || list.length === 0) return [...DEFAULT_HEADER_BANNERS]
-  const filtered = list
-    .filter((u) => typeof u === 'string' && u.trim())
-    .slice(0, MAX_HEADER_BANNERS)
+  const filtered = list.filter((u) => typeof u === 'string' && u.trim()).slice(0, MAX_HEADER_BANNERS)
   return filtered.length > 0 ? filtered : [...DEFAULT_HEADER_BANNERS]
 }
 
-export function setHeaderBanners(urls) {
-  const clean = (urls || [])
-    .filter((u) => typeof u === 'string' && u.trim())
-    .slice(0, MAX_HEADER_BANNERS)
-  localStorage.setItem(HEADER_BANNERS_KEY, JSON.stringify(clean))
+export async function setHeaderBanners(urls) {
+  const clean = (urls || []).filter((u) => typeof u === 'string' && u.trim()).slice(0, MAX_HEADER_BANNERS)
+  await sbSetConfig('header_banners', clean)
   notifyStoreUpdate()
 }
 
-export function resetHeaderBannersToDefault() {
-  localStorage.removeItem(HEADER_BANNERS_KEY)
+export async function resetHeaderBannersToDefault() {
+  await sbSetConfig('header_banners', DEFAULT_HEADER_BANNERS)
   notifyStoreUpdate()
 }
 
-const CATEGORIES_KEY = 'taager_categories'
+// ─── Categories ───────────────────────────────────────────────────────────────
 
-/** حد أقصى لتصنيفات المتجر (صورة + اسم لكل تصنيف) */
 export const MAX_CATEGORIES = 16
 
 export const DEFAULT_CATEGORIES = [
-  {
-    id: 'cat-default-1',
-    nameAr: 'إلكترونيات',
-    imageUrl:
-      'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=240&q=80&fit=crop',
-  },
-  {
-    id: 'cat-default-2',
-    nameAr: 'ملابس',
-    imageUrl:
-      'https://images.unsplash.com/photo-1445205170230-053b83016050?w=240&q=80&fit=crop',
-  },
-  {
-    id: 'cat-default-3',
-    nameAr: 'منتجات ترفيهية',
-    imageUrl:
-      'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=240&q=80&fit=crop',
-  },
-  {
-    id: 'cat-default-4',
-    nameAr: 'الصحة والجمال',
-    imageUrl:
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=240&q=80&fit=crop',
-  },
-  {
-    id: 'cat-default-5',
-    nameAr: 'المنزل',
-    imageUrl:
-      'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=240&q=80&fit=crop',
-  },
-  {
-    id: 'cat-default-6',
-    nameAr: 'تاجر جملة',
-    imageUrl:
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=240&q=80&fit=crop',
-  },
+  { id: 'cat-default-1', nameAr: 'إلكترونيات', imageUrl: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=240&q=80&fit=crop' },
+  { id: 'cat-default-2', nameAr: 'ملابس', imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=240&q=80&fit=crop' },
+  { id: 'cat-default-3', nameAr: 'منتجات ترفيهية', imageUrl: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=240&q=80&fit=crop' },
+  { id: 'cat-default-4', nameAr: 'الصحة والجمال', imageUrl: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=240&q=80&fit=crop' },
+  { id: 'cat-default-5', nameAr: 'المنزل', imageUrl: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=240&q=80&fit=crop' },
+  { id: 'cat-default-6', nameAr: 'تاجر جملة', imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=240&q=80&fit=crop' },
 ]
 
 function ensureDefaultCategories(list) {
@@ -101,62 +76,41 @@ function ensureDefaultCategories(list) {
   return out
 }
 
-export function getCategories() {
-  const list = readJson(CATEGORIES_KEY, null)
-  if (list == null) return DEFAULT_CATEGORIES.map((c) => ({ ...c }))
-  if (!Array.isArray(list)) return DEFAULT_CATEGORIES.map((c) => ({ ...c }))
+export async function getCategories() {
+  const list = await sbGetConfig('categories', null)
+  if (!Array.isArray(list) || list.length === 0) return DEFAULT_CATEGORIES.map((c) => ({ ...c }))
   const cleaned = list
-    .filter(
-      (c) =>
-        c &&
-        typeof c.id === 'string' &&
-        c.id.trim() &&
-        typeof c.nameAr === 'string' &&
-        c.nameAr.trim(),
-    )
-    .map((c) => ({
-      id: String(c.id).trim(),
-      nameAr: String(c.nameAr).trim(),
-      imageUrl: typeof c.imageUrl === 'string' ? c.imageUrl.trim() : '',
-    }))
+    .filter((c) => c && typeof c.id === 'string' && c.id.trim() && typeof c.nameAr === 'string' && c.nameAr.trim())
+    .map((c) => ({ id: String(c.id).trim(), nameAr: String(c.nameAr).trim(), imageUrl: typeof c.imageUrl === 'string' ? c.imageUrl.trim() : '' }))
     .slice(0, MAX_CATEGORIES)
   if (cleaned.length === 0) return DEFAULT_CATEGORIES.map((c) => ({ ...c }))
   return ensureDefaultCategories(cleaned)
 }
 
-export function setCategories(categories) {
+export async function setCategories(categories) {
   const clean = (categories || [])
     .filter((c) => c && c.id && c.nameAr)
     .slice(0, MAX_CATEGORIES)
-    .map((c) => ({
-      id: String(c.id),
-      nameAr: String(c.nameAr).trim(),
-      imageUrl: String(c.imageUrl || '').trim(),
-    }))
-  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(clean))
+    .map((c) => ({ id: String(c.id), nameAr: String(c.nameAr).trim(), imageUrl: String(c.imageUrl || '').trim() }))
+  await sbSetConfig('categories', clean)
   notifyStoreUpdate()
 }
 
-export function addCategory({ nameAr, imageUrl }) {
+export async function addCategory({ nameAr, imageUrl }) {
   const name = String(nameAr || '').trim()
   if (!name) return false
-  const list = getCategories()
-  const id = `cat-${Date.now()}`
-  list.push({
-    id,
-    nameAr: name,
-    imageUrl: String(imageUrl || '').trim(),
-  })
-  setCategories(list)
+  const list = await getCategories()
+  list.push({ id: `cat-${Date.now()}`, nameAr: name, imageUrl: String(imageUrl || '').trim() })
+  await setCategories(list)
   return true
 }
 
-export function removeCategory(categoryId) {
-  const id = String(categoryId)
-  setCategories(getCategories().filter((c) => c.id !== id))
+export async function removeCategory(categoryId) {
+  await setCategories((await getCategories()).filter((c) => c.id !== String(categoryId)))
 }
 
-/** Mot de passe admin : définir VITE_ADMIN_PASSWORD dans .env (sinon défaut dev uniquement). */
+// ─── Admin auth ───────────────────────────────────────────────────────────────
+
 export function getAdminPassword() {
   return import.meta.env.VITE_ADMIN_PASSWORD ?? 'admin123'
 }
@@ -177,6 +131,8 @@ export function isAdminLoggedIn() {
   return sessionStorage.getItem(ADMIN_SESSION_KEY) === '1'
 }
 
+// ─── localStorage helper (orders only) ───────────────────────────────────────
+
 function readJson(key, fallback) {
   try {
     const raw = localStorage.getItem(key)
@@ -187,115 +143,59 @@ function readJson(key, fallback) {
   }
 }
 
+// ─── In-memory caches ─────────────────────────────────────────────────────────
+
 const DEFAULT_RATING = 4.6
 const DEFAULT_REVIEW_COUNT = 48
 const DEFAULT_SOLD_COUNT = 320
 
-/** بعد hydrateStoreCaches() تُقرأ من الذاكرة؛ قبلها من localStorage */
 let extraProductsCache = null
 let productEditsCache = null
 let trashCache = null
 
-function readExtraRaw() {
+// ─── Supabase-backed persistence ─────────────────────────────────────────────
+
+async function readExtraRaw() {
   if (extraProductsCache !== null) return extraProductsCache
-  const list = readJson(EXTRA_PRODUCTS_KEY, [])
-  extraProductsCache = Array.isArray(list) ? list : []
+  const { data } = await supabase.from('extra_products').select('id, data')
+  extraProductsCache = Array.isArray(data) ? data.map((r) => ({ ...r.data, id: r.id })) : []
   return extraProductsCache
 }
 
-async function persistExtraRaw(arr) {
-  extraProductsCache = arr
-  await idbSet(EXTRA_PRODUCTS_KEY, arr)
-  try {
-    localStorage.removeItem(EXTRA_PRODUCTS_KEY)
-  } catch {
-    /* ignore */
-  }
+async function getEditsMap() {
+  if (productEditsCache !== null) return productEditsCache
+  const { data } = await supabase.from('product_edits').select('product_id, data')
+  productEditsCache = {}
+  if (Array.isArray(data)) data.forEach((r) => { productEditsCache[r.product_id] = r.data })
+  return productEditsCache
 }
 
-async function persistEdits() {
-  await idbSet(PRODUCT_EDITS_KEY, getEditsMap())
-  try {
-    localStorage.removeItem(PRODUCT_EDITS_KEY)
-  } catch {
-    /* ignore */
-  }
+async function persistEdits(edits) {
+  productEditsCache = edits
+  const rows = Object.entries(edits).map(([product_id, data]) => ({ product_id, data }))
+  if (rows.length > 0) await supabase.from('product_edits').upsert(rows)
 }
 
 async function persistTrash(entries) {
   const clean = entries.slice(0, MAX_TRASH_ITEMS)
   trashCache = clean
-  await idbSet(TRASH_KEY, clean)
-  try {
-    localStorage.removeItem(TRASH_KEY)
-  } catch {
-    /* ignore */
+  if (clean.length > 0) {
+    await supabase.from('trash').upsert(clean.map((t) => ({ id: t.id, deleted_at: t.deletedAt, product: t.product })))
+  } else {
+    await supabase.from('trash').delete().neq('id', '')
   }
 }
 
-/**
- * يحمّل البيانات الثقيلة (منتجات مخصصة، تعديلات، سلة محذوفات) إلى IndexedDB
- * ويحرّر مساحة localStorage. يُستدعى مرة عند إقلاع التطبيق قبل الرسم.
- */
 export async function hydrateStoreCaches() {
-  const fallbackFromLs = () => {
-    if (extraProductsCache === null) {
-      const ex = readJson(EXTRA_PRODUCTS_KEY, [])
-      extraProductsCache = Array.isArray(ex) ? ex : []
-    }
-    if (productEditsCache === null) {
-      const ed = readJson(PRODUCT_EDITS_KEY, {})
-      productEditsCache =
-        ed && typeof ed === 'object' && !Array.isArray(ed) ? ed : {}
-    }
-    if (trashCache === null) {
-      const tr = readJson(TRASH_KEY, [])
-      trashCache = Array.isArray(tr) ? tr : []
-    }
-  }
-
-  try {
-    let extra = await idbGet(EXTRA_PRODUCTS_KEY)
-    if (extra === undefined) {
-      extra = readJson(EXTRA_PRODUCTS_KEY, [])
-      if (!Array.isArray(extra)) extra = []
-      await idbSet(EXTRA_PRODUCTS_KEY, extra)
-    }
-    extraProductsCache = Array.isArray(extra) ? extra : []
-
-    let edits = await idbGet(PRODUCT_EDITS_KEY)
-    if (edits === undefined) {
-      edits = readJson(PRODUCT_EDITS_KEY, {})
-      if (!edits || typeof edits !== 'object' || Array.isArray(edits)) edits = {}
-      await idbSet(PRODUCT_EDITS_KEY, edits)
-    }
-    productEditsCache =
-      edits && typeof edits === 'object' && !Array.isArray(edits) ? edits : {}
-
-    let trash = await idbGet(TRASH_KEY)
-    if (trash === undefined) {
-      trash = readJson(TRASH_KEY, [])
-      if (!Array.isArray(trash)) trash = []
-      await idbSet(TRASH_KEY, trash)
-    }
-    trashCache = Array.isArray(trash) ? trash : []
-
-    try {
-      localStorage.removeItem(EXTRA_PRODUCTS_KEY)
-      localStorage.removeItem(PRODUCT_EDITS_KEY)
-      localStorage.removeItem(TRASH_KEY)
-    } catch {
-      /* ignore */
-    }
-  } catch {
-    fallbackFromLs()
-  }
+  await Promise.all([readExtraRaw(), getEditsMap()])
+  const { data: trashData } = await supabase.from('trash').select('id, deleted_at, product')
+  trashCache = Array.isArray(trashData)
+    ? trashData.map((r) => ({ id: r.id, deletedAt: r.deleted_at, product: r.product }))
+    : []
 }
 
-/**
- * أسواق العرض: EG SA AE IQ OM — القيم غير المعروفة تُستبعد.
- * الافتراضي للمنتجات القديمة: السعودية + الإمارات.
- */
+// ─── Product helpers ──────────────────────────────────────────────────────────
+
 export function normalizeProductMarkets(p) {
   const m = p?.markets
   if (Array.isArray(m) && m.length > 0) {
@@ -305,13 +205,11 @@ export function normalizeProductMarkets(p) {
   return ['SA', 'AE']
 }
 
-/** هل المنتج متاح للتوصيل/العرض في بلد الزبون؟ */
 export function productAvailableInCountry(p, countryId) {
   if (!countryId || !COUNTRY_IDS.includes(countryId)) return false
   return normalizeProductMarkets(p).includes(countryId)
 }
 
-/** @deprecated استخدم productAvailableInCountry مع بلد الزبون */
 export function productVisibleForCurrency(p, currency) {
   const m = normalizeProductMarkets(p)
   if (currency === 'AED') return m.includes('AE')
@@ -320,187 +218,152 @@ export function productVisibleForCurrency(p, currency) {
 
 export function formatMarketsLabel(p) {
   const m = normalizeProductMarkets(p)
-  const labels = m
-    .map((id) => COUNTRIES.find((c) => c.id === id)?.nameAr)
-    .filter(Boolean)
+  const labels = m.map((id) => COUNTRIES.find((c) => c.id === id)?.nameAr).filter(Boolean)
   return labels.length ? labels.join('، ') : '—'
 }
 
-/** يضمن ظهور سطر الآراء في المتجر (منتجات قديمة بلا حقول + جديدة). */
 function withDefaultReviews(p) {
   const out = { ...p }
   const reviewsOk =
-    typeof out.rating === 'number' &&
-    !Number.isNaN(out.rating) &&
-    out.rating >= 0 &&
-    out.rating <= 5 &&
-    typeof out.reviewCount === 'number' &&
-    Number.isFinite(out.reviewCount) &&
-    out.reviewCount >= 0
-  if (!reviewsOk) {
-    out.rating = DEFAULT_RATING
-    out.reviewCount = DEFAULT_REVIEW_COUNT
-  }
-  if (
-    typeof out.soldCount !== 'number' ||
-    !Number.isFinite(out.soldCount) ||
-    out.soldCount <= 0
-  ) {
+    typeof out.rating === 'number' && !Number.isNaN(out.rating) && out.rating >= 0 && out.rating <= 5 &&
+    typeof out.reviewCount === 'number' && Number.isFinite(out.reviewCount) && out.reviewCount >= 0
+  if (!reviewsOk) { out.rating = DEFAULT_RATING; out.reviewCount = DEFAULT_REVIEW_COUNT }
+  if (typeof out.soldCount !== 'number' || !Number.isFinite(out.soldCount) || out.soldCount <= 0) {
     out.soldCount = DEFAULT_SOLD_COUNT
   }
   out.markets = normalizeProductMarkets(out)
   return attachLegacyMediaFields(out)
 }
 
-function getEditsMap() {
-  if (productEditsCache !== null) return productEditsCache
-  const o = readJson(PRODUCT_EDITS_KEY, {})
-  productEditsCache =
-    o && typeof o === 'object' && !Array.isArray(o) ? o : {}
-  return productEditsCache
-}
-
-function mergeWithStoredEdit(p) {
-  const e = getEditsMap()[p.id]
+async function mergeWithStoredEdit(p) {
+  const edits = await getEditsMap()
+  const e = edits[p.id]
   return withDefaultReviews(e ? { ...p, ...e } : { ...p })
 }
 
-export function getExtraProducts() {
-  return readExtraRaw().map((p) => mergeWithStoredEdit(withDefaultReviews({ ...p })))
+export async function getExtraProducts() {
+  const extra = await readExtraRaw()
+  return Promise.all(extra.map((p) => mergeWithStoredEdit(withDefaultReviews({ ...p }))))
 }
 
-/** كل المنتجات (أساسية + إضافية) قبل إخفاء المحذوفة من الأصل */
-function buildFullProductCatalog() {
+async function buildFullProductCatalog() {
+  const extra = await readExtraRaw()
   return [
-    ...baseProducts.map(mergeWithStoredEdit),
-    ...readExtraRaw().map((p) => mergeWithStoredEdit(withDefaultReviews({ ...p }))),
+    ...(await Promise.all(baseProducts.map(mergeWithStoredEdit))),
+    ...(await Promise.all(extra.map((p) => mergeWithStoredEdit(withDefaultReviews({ ...p }))))),
   ]
 }
 
-function readDeletedBaseIds() {
-  const raw = readJson(DELETED_BASE_IDS_KEY, [])
-  return new Set(Array.isArray(raw) ? raw.filter((x) => typeof x === 'string') : [])
+async function readDeletedBaseIds() {
+  const val = await sbGetConfig('deleted_base_ids', [])
+  return new Set(Array.isArray(val) ? val.filter((x) => typeof x === 'string') : [])
 }
 
-export function getMergedProducts() {
-  const hiddenBase = readDeletedBaseIds()
+export async function getMergedProducts() {
+  const hiddenBase = await readDeletedBaseIds()
+  const extra = await readExtraRaw()
   return [
-    ...baseProducts.map(mergeWithStoredEdit).filter((p) => !hiddenBase.has(p.id)),
-    ...readExtraRaw().map((p) => mergeWithStoredEdit(withDefaultReviews({ ...p }))),
+    ...(await Promise.all(baseProducts.map(mergeWithStoredEdit))).filter((p) => !hiddenBase.has(p.id)),
+    ...(await Promise.all(extra.map((p) => mergeWithStoredEdit(withDefaultReviews({ ...p }))))),
   ]
 }
 
-/** سلة المحذوفات: { id, deletedAt, product }[] */
 export function getTrash() {
-  if (trashCache !== null) return Array.isArray(trashCache) ? trashCache : []
-  const t = readJson(TRASH_KEY, [])
-  trashCache = Array.isArray(t) ? t : []
-  return trashCache
+  return Array.isArray(trashCache) ? trashCache : []
 }
 
-/**
- * حذف ناعم: يختفي من المتجر ويُنقل للسلة. أساسي = يبقى في JSON لكن مخفي؛ مخصص = يُزال من الإضافي.
- */
 export async function softDeleteProduct(productId) {
   const id = String(productId)
-  const catalog = buildFullProductCatalog()
+  const catalog = await buildFullProductCatalog()
   const product = catalog.find((p) => p.id === id)
   if (!product) return false
 
   const trash = getTrash().filter((t) => t.id !== id)
-  trash.unshift({
-    id,
-    deletedAt: Date.now(),
-    product: JSON.parse(JSON.stringify(product)),
-  })
+  trash.unshift({ id, deletedAt: Date.now(), product: JSON.parse(JSON.stringify(product)) })
   await persistTrash(trash)
 
-  const feat = getFeaturedProductIds().filter((x) => x !== id)
-  setFeaturedProductIds(feat)
+  const feat = (await getFeaturedProductIds()).filter((x) => x !== id)
+  await setFeaturedProductIds(feat)
 
   if (id.startsWith('custom-')) {
-    const extra = readExtraRaw().filter((p) => p.id !== id)
-    await persistExtraRaw(extra)
-    const edits = getEditsMap()
+    extraProductsCache = (await readExtraRaw()).filter((p) => p.id !== id)
+    await supabase.from('extra_products').delete().eq('id', id)
+    const edits = await getEditsMap()
     if (edits[id]) {
       delete edits[id]
-      await persistEdits()
+      await supabase.from('product_edits').delete().eq('product_id', id)
     }
   } else {
-    const cur = [...readDeletedBaseIds()]
+    const cur = [...(await readDeletedBaseIds())]
     if (!cur.includes(id)) cur.push(id)
-    localStorage.setItem(DELETED_BASE_IDS_KEY, JSON.stringify(cur))
+    await sbSetConfig('deleted_base_ids', cur)
   }
 
   notifyStoreUpdate()
   return true
 }
 
-/** استعادة من السلة إلى المتجر */
 export async function restoreProductFromTrash(productId) {
   const id = String(productId)
   const trash = getTrash()
   const entry = trash.find((t) => t.id === id)
   if (!entry) return false
 
-  const rest = trash.filter((t) => t.id !== id)
-  await persistTrash(rest)
+  await persistTrash(trash.filter((t) => t.id !== id))
 
   if (id.startsWith('custom-')) {
-    const extra = readExtraRaw()
+    const extra = await readExtraRaw()
     if (!extra.some((p) => p.id === id)) {
       extra.push(entry.product)
-      await persistExtraRaw(extra)
+      extraProductsCache = extra
+      await supabase.from('extra_products').upsert({ id, data: entry.product })
     }
   } else {
-    const cur = [...readDeletedBaseIds()].filter((x) => x !== id)
-    localStorage.setItem(DELETED_BASE_IDS_KEY, JSON.stringify(cur))
+    const cur = [...(await readDeletedBaseIds())].filter((x) => x !== id)
+    await sbSetConfig('deleted_base_ids', cur)
   }
 
   notifyStoreUpdate()
   return true
 }
 
-/** حذف نهائي من السلة فقط (الأساسي يبقى مخفياً إن كان محذوفاً من الأصل) */
 export async function purgeTrashEntry(productId) {
   const id = String(productId)
-  const rest = getTrash().filter((t) => t.id !== id)
-  await persistTrash(rest)
+  trashCache = getTrash().filter((t) => t.id !== id)
+  await supabase.from('trash').delete().eq('id', id)
   notifyStoreUpdate()
   return true
 }
 
-/** إزالة التعديلات المحفوظة للمنتجات الأساسية (العودة لقيم JSON) */
 export async function removeProductEdit(productId) {
   const id = String(productId)
-  const edits = getEditsMap()
+  const edits = await getEditsMap()
   if (!edits[id]) return
   delete edits[id]
-  await persistEdits()
+  productEditsCache = edits
+  await supabase.from('product_edits').delete().eq('product_id', id)
   notifyStoreUpdate()
 }
 
-/**
- * حفظ تعديل منتج: المنتجات custom تُحدَّث في التخزين؛ الباقي في طبقة التعديلات.
- */
 export async function saveProduct(productId, payload) {
   try {
     const id = String(productId)
     if (id.startsWith('custom-')) {
-      const raw = readExtraRaw()
+      const raw = await readExtraRaw()
       const idx = raw.findIndex((p) => p.id === id)
       if (idx < 0) return false
       raw[idx] = { ...raw[idx], ...payload }
-      await persistExtraRaw(raw)
-      const edits = getEditsMap()
+      extraProductsCache = raw
+      await supabase.from('extra_products').upsert({ id, data: raw[idx] })
+      const edits = await getEditsMap()
       if (edits[id]) {
         delete edits[id]
-        await persistEdits()
+        await supabase.from('product_edits').delete().eq('product_id', id)
       }
     } else {
-      const edits = getEditsMap()
+      const edits = await getEditsMap()
       edits[id] = { ...(edits[id] || {}), ...payload }
-      await persistEdits()
+      await persistEdits(edits)
     }
     notifyStoreUpdate()
     return true
@@ -509,42 +372,37 @@ export async function saveProduct(productId, payload) {
   }
 }
 
-/** معرفات المنتجات المعروضة في بلوك «الأكثر مبيعاً اليوم». فارغ = كل المنتجات. */
-export function getFeaturedProductIds() {
-  const list = readJson(FEATURED_PRODUCT_IDS_KEY, [])
+export async function getFeaturedProductIds() {
+  const list = await sbGetConfig('featured_product_ids', [])
   if (!Array.isArray(list)) return []
   return [...new Set(list.filter((id) => typeof id === 'string' && id.trim()))]
 }
 
-export function setFeaturedProductIds(ids) {
-  const clean = []
-  const seen = new Set()
-  for (const id of ids) {
-    if (typeof id !== 'string' || !id.trim() || seen.has(id)) continue
-    seen.add(id)
-    clean.push(id)
-  }
-  localStorage.setItem(FEATURED_PRODUCT_IDS_KEY, JSON.stringify(clean))
+export async function setFeaturedProductIds(ids) {
+  const clean = [...new Set((ids || []).filter((id) => typeof id === 'string' && id.trim()))]
+  await sbSetConfig('featured_product_ids', clean)
   notifyStoreUpdate()
 }
 
-export function toggleFeaturedProductId(productId) {
+export async function toggleFeaturedProductId(productId) {
   const id = String(productId)
-  const cur = getFeaturedProductIds()
+  const cur = await getFeaturedProductIds()
   const set = new Set(cur)
   if (set.has(id)) {
-    setFeaturedProductIds(cur.filter((x) => x !== id))
+    await setFeaturedProductIds(cur.filter((x) => x !== id))
   } else {
-    setFeaturedProductIds([...cur, id])
+    await setFeaturedProductIds([...cur, id])
   }
 }
 
 export async function addExtraProduct(product) {
   try {
-    const extra = readExtraRaw()
     const id = `custom-${Date.now()}`
-    extra.push(withDefaultReviews({ ...product, id }))
-    await persistExtraRaw(extra)
+    const p = withDefaultReviews({ ...product, id })
+    const extra = await readExtraRaw()
+    extra.push(p)
+    extraProductsCache = extra
+    await supabase.from('extra_products').insert({ id, data: p })
     notifyStoreUpdate()
     return true
   } catch {
@@ -554,43 +412,39 @@ export async function addExtraProduct(product) {
 
 export async function removeExtraProduct(id) {
   if (!String(id).startsWith('custom-')) return
-  const extra = readExtraRaw().filter((p) => p.id !== id)
-  await persistExtraRaw(extra)
+  extraProductsCache = (await readExtraRaw()).filter((p) => p.id !== id)
+  await supabase.from('extra_products').delete().eq('id', id)
   notifyStoreUpdate()
 }
 
+// ─── Orders (localStorage — per device) ──────────────────────────────────────
+
 export function getOrders() {
-  const list = readJson(ORDERS_KEY, [])
+  const list = readJson('taager_orders', [])
   return Array.isArray(list) ? list : []
 }
 
-/** حالة الطلب في لوحة الإدارة: pending = جديد، validated = مؤكد */
 export function updateOrder(id, patch) {
   const orders = getOrders()
   const idx = orders.findIndex((o) => o.id === id)
   if (idx < 0) return false
   orders[idx] = { ...orders[idx], ...patch }
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
+  localStorage.setItem('taager_orders', JSON.stringify(orders))
   notifyStoreUpdate()
   return true
 }
 
 export function removeOrder(id) {
   const orders = getOrders().filter((o) => o.id !== id)
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
+  localStorage.setItem('taager_orders', JSON.stringify(orders))
   notifyStoreUpdate()
 }
 
 export function addOrder(order) {
   const orders = getOrders()
-  const row = {
-    ...order,
-    id: `ord-${Date.now()}`,
-    createdAt: Date.now(),
-    status: 'pending',
-  }
+  const row = { ...order, id: `ord-${Date.now()}`, createdAt: Date.now(), status: 'pending' }
   orders.unshift(row)
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
+  localStorage.setItem('taager_orders', JSON.stringify(orders))
   notifyStoreUpdate()
 }
 
@@ -599,3 +453,4 @@ export function notifyStoreUpdate() {
     window.dispatchEvent(new Event('taager-store-update'))
   }
 }
+
