@@ -13,6 +13,8 @@ import { productLandingPath } from '../lib/productUrl.js'
 import { computeOrderLinePrice } from '../lib/quantityPromos.js'
 import {
   addOrder,
+  DEFAULT_CATEGORIES,
+  DEFAULT_HEADER_BANNERS,
   getCategories,
   getFeaturedProductIds,
   getHeaderBanners,
@@ -209,19 +211,32 @@ function ProductTile({ p, country, onOpenGallery, onCheckout }) {
 }
 
 export default function Storefront() {
-  const [productsList, setProductsList] = useState(() => getMergedProducts())
-  const [featuredIds, setFeaturedIds] = useState(() => getFeaturedProductIds())
-  const [headerBanners, setHeaderBanners] = useState(() => getHeaderBanners())
-  const [categories, setCategories] = useState(() => getCategories())
+  const [productsList, setProductsList] = useState([])
+  const [featuredIds, setFeaturedIds] = useState([])
+  const [headerBanners, setHeaderBanners] = useState(DEFAULT_HEADER_BANNERS)
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES)
   const [selectedCategoryId, setSelectedCategoryId] = useState(null)
   const [categoriesMenuOpen, setCategoriesMenuOpen] = useState(false)
 
   useEffect(() => {
-    const sync = () => {
-      setProductsList(getMergedProducts())
-      setFeaturedIds(getFeaturedProductIds())
-      setHeaderBanners(getHeaderBanners())
-      setCategories(getCategories())
+    Promise.all([getMergedProducts(), getFeaturedProductIds(), getHeaderBanners(), getCategories()])
+      .then(([products, featured, banners, cats]) => {
+        setProductsList(products)
+        setFeaturedIds(featured)
+        setHeaderBanners(banners)
+        setCategories(cats)
+      })
+  }, [])
+
+  useEffect(() => {
+    const sync = async () => {
+      const [products, featured, banners, cats] = await Promise.all([
+        getMergedProducts(), getFeaturedProductIds(), getHeaderBanners(), getCategories()
+      ])
+      setProductsList(products)
+      setFeaturedIds(featured)
+      setHeaderBanners(banners)
+      setCategories(cats)
     }
     window.addEventListener('taager-store-update', sync)
     return () => window.removeEventListener('taager-store-update', sync)

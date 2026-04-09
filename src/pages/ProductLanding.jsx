@@ -69,10 +69,14 @@ function setMetaTag(attr, key, content) {
 
 export default function ProductLanding() {
   const { productId } = useParams()
-  const [productsList, setProductsList] = useState(() => getMergedProducts())
+  const [productsList, setProductsList] = useState([])
 
   useEffect(() => {
-    const sync = () => setProductsList(getMergedProducts())
+    getMergedProducts().then(setProductsList)
+  }, [])
+
+  useEffect(() => {
+    const sync = async () => setProductsList(await getMergedProducts())
     window.addEventListener('taager-store-update', sync)
     return () => window.removeEventListener('taager-store-update', sync)
   }, [])

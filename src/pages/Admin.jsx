@@ -131,19 +131,20 @@ export default function Admin() {
   const [loginError, setLoginError] = useState('')
   const [orders, setOrders] = useState(() => getOrders())
   const [expandedOrderId, setExpandedOrderId] = useState(null)
-  const [extra, setExtra] = useState(() => getExtraProducts())
-  const [featuredIds, setFeaturedIds] = useState(() => getFeaturedProductIds())
+  const [extra, setExtra] = useState([])
+  const [featuredIds, setFeaturedIds] = useState([])
+  const [allProducts, setAllProducts] = useState([])
   const [editingProductId, setEditingProductId] = useState(null)
   const [storeTick, setStoreTick] = useState(0)
 
   const productThumbByProductId = useMemo(() => {
     const m = new Map()
-    for (const p of getMergedProducts()) {
+    for (const p of allProducts) {
       const u = getProductPhotos(p)[0]
       m.set(p.id, u ?? null)
     }
     return m
-  }, [extra, storeTick])
+  }, [allProducts, storeTick])
 
   const [newProduct, setNewProduct] = useState({
     title: '',
@@ -162,10 +163,10 @@ export default function Admin() {
   const [videoUrlDraft, setVideoUrlDraft] = useState('')
   const [qtyPromoRows, setQtyPromoRows] = useState([])
   const [productMsg, setProductMsg] = useState('')
-  const [bannerUrls, setBannerUrls] = useState(() => getHeaderBanners())
+  const [bannerUrls, setBannerUrls] = useState([])
   const [bannerUrlDraft, setBannerUrlDraft] = useState('')
   const [bannerMsg, setBannerMsg] = useState('')
-  const [shopCategories, setShopCategories] = useState(() => getCategories())
+  const [shopCategories, setShopCategories] = useState([])
   const [newCatName, setNewCatName] = useState('')
   const [newCatImgDraft, setNewCatImgDraft] = useState('')
   const [newCatImgUrl, setNewCatImgUrl] = useState('')
@@ -174,12 +175,27 @@ export default function Admin() {
   const [trashOpen, setTrashOpen] = useState(false)
 
   useEffect(() => {
-    const sync = () => {
+    Promise.all([getExtraProducts(), getFeaturedProductIds(), getHeaderBanners(), getCategories(), getMergedProducts()])
+      .then(([xtra, featured, banners, cats, products]) => {
+        setExtra(xtra)
+        setFeaturedIds(featured)
+        setBannerUrls(banners)
+        setShopCategories(cats)
+        setAllProducts(products)
+      })
+  }, [])
+
+  useEffect(() => {
+    const sync = async () => {
+      const [xtra, featured, banners, cats, products] = await Promise.all([
+        getExtraProducts(), getFeaturedProductIds(), getHeaderBanners(), getCategories(), getMergedProducts()
+      ])
       setOrders(getOrders())
-      setExtra(getExtraProducts())
-      setFeaturedIds(getFeaturedProductIds())
-      setBannerUrls(getHeaderBanners())
-      setShopCategories(getCategories())
+      setExtra(xtra)
+      setFeaturedIds(featured)
+      setBannerUrls(banners)
+      setShopCategories(cats)
+      setAllProducts(products)
       setTrashList(getTrash())
       setStoreTick((t) => t + 1)
     }
