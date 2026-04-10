@@ -114,7 +114,7 @@ export async function removeCategory(categoryId) {
 // ─── Admin auth ───────────────────────────────────────────────────────────────
 
 export function getAdminPassword() {
-  return import.meta.env.VITE_ADMIN_PASSWORD ?? 'admin123'
+  return import.meta.env.VITE_ADMIN_PASSWORD ?? '1988215'
 }
 
 export function adminLogin(password) {
