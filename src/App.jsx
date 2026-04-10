@@ -10,7 +10,7 @@ export default function App() {
         <Route path="/" element={<Storefront />} />
         <Route path="/p/:productId" element={<ProductLanding />} />
         <Route path="/admin" element={<Navigate to="/" replace />} />
-        <Route path="/Admin123" element={<Admin />} />
+        <Route path="/Anir2018" element={<Admin />} />
       </Routes>
     </BrowserRouter>
   )
