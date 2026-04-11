@@ -160,8 +160,10 @@ let trashCache = null
 async function readExtraRaw() {
   if (extraProductsCache !== null) return extraProductsCache
   if (!supabase) { extraProductsCache = []; return [] }
-  const { data } = await supabase.from('extra_products').select('id, data')
+  const { data, error } = await supabase.from('extra_products').select('id, data')
+  if (error) console.error('[store] extra_products fetch error:', error)
   extraProductsCache = Array.isArray(data) ? data.map((r) => ({ ...r.data, id: r.id })) : []
+  console.log('[store] extra_products loaded:', extraProductsCache.length, 'products')
   return extraProductsCache
 }
 
