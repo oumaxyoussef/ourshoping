@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   MAX_IMAGE_FILE_BYTES,
@@ -44,6 +44,7 @@ import {
   updateOrder,
   restoreProductFromTrash,
 } from '../lib/store.js'
+import { supabase } from '../lib/supabase.js'
 import { COUNTRIES, currencyForCountry } from '../lib/countries.js'
 import { formatMoney } from '../lib/money.js'
 import {
@@ -173,6 +174,8 @@ export default function Admin() {
   const [catMsg, setCatMsg] = useState('')
   const [trashList, setTrashList] = useState(() => getTrash())
   const [trashOpen, setTrashOpen] = useState(false)
+  const [newOrderAlert, setNewOrderAlert] = useState(false)
+  const audioRef = useRef(null)
 
   useEffect(() => {
     Promise.all([getExtraProducts(), getFeaturedProductIds(), getHeaderBanners(), getCategories(), getMergedProducts(), getOrders()])
@@ -202,6 +205,20 @@ export default function Admin() {
     }
     window.addEventListener('taager-store-update', sync)
     return () => window.removeEventListener('taager-store-update', sync)
+  }, [])
+
+  useEffect(() => {
+    if (!supabase) return
+    const channel = supabase
+      .channel('orders-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, async () => {
+        const ords = await getOrders()
+        setOrders(ords)
+        setNewOrderAlert(true)
+        try { audioRef.current?.play() } catch {}
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   const resetProductForm = () => {
@@ -720,7 +737,21 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12" dir="rtl">
-      <header className="border-b border-gray-200 bg-white">
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+      <audio ref={audioRef} src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="none" />
+      {newOrderAlert && (
+        <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-3 bg-green-600 px-4 py-3 text-white shadow-lg">
+          <span className="font-extrabold text-lg">🛒 طلب جديد وصل!</span>
+          <button
+            type="button"
+            onClick={() => setNewOrderAlert(false)}
+            className="rounded-full bg-white/20 px-3 py-1 text-sm font-bold hover:bg-white/30"
+          >
+            إخفاء
+          </button>
+        </div>
+      )}
+      <header className={`border-b border-gray-200 bg-white ${newOrderAlert ? 'mt-14' : ''}`}>
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <h1 className="text-xl font-extrabold text-gray-900">لوحة الإدارة</h1>
           <div className="flex gap-2">
