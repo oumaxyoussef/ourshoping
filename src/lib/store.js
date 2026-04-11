@@ -209,7 +209,7 @@ export function normalizeProductMarkets(p) {
     const ok = [...new Set(m.filter((x) => COUNTRY_IDS.includes(x)))]
     if (ok.length > 0) return ok
   }
-  return ['SA', 'AE']
+  return [...COUNTRY_IDS]
 }
 
 export function productAvailableInCountry(p, countryId) {

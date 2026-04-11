@@ -15,7 +15,7 @@
     "rating": 4.7,
     "reviewCount": 842,
     "soldCount": 12400,
-    "markets": ["SA"],
+    "markets": ["SA", "AE", "EG", "IQ", "OM"],
     "quantityPromos": [
       { "quantity": 2, "priceSar": 140, "priceAed": 137 },
       { "quantity": 3, "priceSar": 200, "priceAed": 196 },
@@ -37,7 +37,7 @@
     "rating": 4.5,
     "reviewCount": 1203,
     "soldCount": 8900,
-    "markets": ["SA"]
+    "markets": ["SA", "AE", "EG", "IQ", "OM"]
   },
   {
     "id": "p3",
@@ -51,7 +51,7 @@
     "rating": 4.8,
     "reviewCount": 356,
     "soldCount": 5200,
-    "markets": ["AE"]
+    "markets": ["SA", "AE", "EG", "IQ", "OM"]
   },
   {
     "id": "p4",
@@ -65,7 +65,7 @@
     "rating": 4.6,
     "reviewCount": 672,
     "soldCount": 3100,
-    "markets": ["AE"]
+    "markets": ["SA", "AE", "EG", "IQ", "OM"]
   },
   {
     "id": "p5",
@@ -79,7 +79,7 @@
     "rating": 4.4,
     "reviewCount": 2891,
     "soldCount": 15600,
-    "markets": ["SA", "AE"]
+    "markets": ["SA", "AE", "EG", "IQ", "OM"]
   },
   {
     "id": "p6",
@@ -93,6 +93,6 @@
     "rating": 4.9,
     "reviewCount": 445,
     "soldCount": 7800,
-    "markets": ["SA", "AE"]
+    "markets": ["SA", "AE", "EG", "IQ", "OM"]
   }
 ]
