@@ -102,6 +102,37 @@ function orderStatusLabel(status) {
   return 'قيد المراجعة'
 }
 
+function AdminSection({ title, badge, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-start hover:bg-gray-50/80"
+      >
+        <span className="flex items-center gap-2 text-lg font-extrabold text-gray-900">
+          {title}
+          {badge != null && (
+            <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-sm tabular-nums text-gray-600">
+              {badge}
+            </span>
+          )}
+        </span>
+        <svg
+          className={`h-5 w-5 shrink-0 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+        </svg>
+      </button>
+      {open && <div className="px-5 pb-5 pt-1">{children}</div>}
+    </section>
+  )
+}
+
 function orderMoneyLine(o) {
   const qty = o.quantity ?? 1
   const totalSar = o.lineTotalSar ?? o.priceSar
@@ -173,7 +204,6 @@ export default function Admin() {
   const [newCatImgUrl, setNewCatImgUrl] = useState('')
   const [catMsg, setCatMsg] = useState('')
   const [trashList, setTrashList] = useState(() => getTrash())
-  const [trashOpen, setTrashOpen] = useState(false)
   const [newOrderAlert, setNewOrderAlert] = useState(false)
   const audioRef = useRef(null)
 
@@ -773,10 +803,7 @@ export default function Admin() {
       </header>
 
       <div className="mx-auto max-w-4xl space-y-10 px-4 py-8">
-        <section>
-          <h2 className="mb-2 text-lg font-extrabold text-gray-900">
-            بانر الصفحة الرئيسية (سلايدر تلقائي)
-          </h2>
+        <AdminSection title="بانر الصفحة الرئيسية (سلايدر تلقائي)">
           <p className="mb-4 text-sm text-gray-600">
             الصور تظهر خلف قسم «أقل الأسعار في الخليج» وتتبدّل تلقائياً مع نفس البلوك (مثل
             تاجر). الحد الأقصى {MAX_HEADER_BANNERS} صور.
@@ -859,10 +886,9 @@ export default function Admin() {
               </button>
             </div>
           </div>
-        </section>
+        </AdminSection>
 
-        <section>
-          <h2 className="mb-2 text-lg font-extrabold text-gray-900">تصنيفات المتجر</h2>
+        <AdminSection title="تصنيفات المتجر">
           <p className="mb-4 text-sm text-gray-600">
             أضف تصنيفاً مع صورة؛ ثم عند إضافة أو تعديل منتج اختر التصنيف من القائمة. يظهر
             للزوار في الشريط الجانبي تحت «جميع التصنيفات».
@@ -957,95 +983,69 @@ export default function Admin() {
               </li>
             ))}
           </ul>
-        </section>
+        </AdminSection>
 
-        <section className="rounded-xl border border-slate-200 bg-slate-50/90 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="flex flex-wrap items-center gap-2 text-lg font-extrabold text-gray-900">
-              <TrashIcon className="h-6 w-6 shrink-0 text-slate-600" />
-              سلة المحذوفات
-              <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-sm tabular-nums text-slate-800">
-                {trashList.length}
-              </span>
-            </h2>
-            <button
-              type="button"
-              onClick={() => setTrashOpen((o) => !o)}
-              className="rounded-full border-2 border-slate-300 bg-white px-4 py-2 text-sm font-extrabold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
-            >
-              {trashOpen ? 'إخفاء' : 'عرض المحتوى'}
-            </button>
-          </div>
-          {!trashOpen && (
-            <p className="mt-3 text-sm text-gray-500">
-              اضغط «عرض المحتوى» لرؤية المنتجات المحذوفة واستعادتها أو حذفها نهائياً.
-            </p>
-          )}
-          {trashOpen && (
-            <>
-              <p className="mb-4 mt-3 text-sm text-gray-600">
-                المنتجات التي نقلتها من المتجر تظهر هنا. يمكن{' '}
-                <span className="font-bold">استعادتها</span> أو{' '}
-                <span className="font-bold">حذفها نهائياً</span> من السجل.
-              </p>
-              {trashList.length === 0 ? (
-                <p className="text-sm text-gray-500">لا يوجد شيء في السلة.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {trashList.map((entry) => (
-                    <li
-                      key={`${entry.id}-${entry.deletedAt}`}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white bg-white px-3 py-2.5 shadow-sm"
+        <AdminSection title="سلة المحذوفات" badge={trashList.length}>
+          <p className="mb-4 mt-2 text-sm text-gray-600">
+            المنتجات التي نقلتها من المتجر تظهر هنا. يمكن{' '}
+            <span className="font-bold">استعادتها</span> أو{' '}
+            <span className="font-bold">حذفها نهائياً</span> من السجل.
+          </p>
+          {trashList.length === 0 ? (
+            <p className="text-sm text-gray-500">لا يوجد شيء في السلة.</p>
+          ) : (
+            <ul className="space-y-2">
+              {trashList.map((entry) => (
+                <li
+                  key={`${entry.id}-${entry.deletedAt}`}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-bold text-gray-900">
+                      {entry.product?.title ?? entry.id}
+                    </p>
+                    <p className="font-mono text-[10px] text-gray-400">{entry.id}</p>
+                    <p className="text-xs text-gray-500">
+                      حُذف في: {formatDate(entry.deletedAt)}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await restoreProductFromTrash(entry.id)
+                        setTrashList(getTrash())
+                        setExtra(await getExtraProducts())
+                        setFeaturedIds(await getFeaturedProductIds())
+                        setStoreTick((t) => t + 1)
+                        setProductMsg('تمت استعادة المنتج إلى المتجر.')
+                      }}
+                      className="rounded-full bg-green-600 px-3 py-1.5 text-xs font-extrabold text-white hover:bg-green-700"
                     >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-bold text-gray-900">
-                          {entry.product?.title ?? entry.id}
-                        </p>
-                        <p className="font-mono text-[10px] text-gray-400">{entry.id}</p>
-                        <p className="text-xs text-gray-500">
-                          حُذف في: {formatDate(entry.deletedAt)}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            await restoreProductFromTrash(entry.id)
-                            setTrashList(getTrash())
-                            setExtra(await getExtraProducts())
-                            setFeaturedIds(await getFeaturedProductIds())
-                            setStoreTick((t) => t + 1)
-                            setProductMsg('تمت استعادة المنتج إلى المتجر.')
-                          }}
-                          className="rounded-full bg-green-600 px-3 py-1.5 text-xs font-extrabold text-white hover:bg-green-700"
-                        >
-                          استعادة
-                        </button>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!window.confirm('حذف هذا السجل نهائياً من السلة؟')) return
-                            await purgeTrashEntry(entry.id)
-                            setTrashList(getTrash())
-                            setProductMsg('تم حذف السجل من السلة.')
-                          }}
-                          className="rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-extrabold text-red-600 hover:bg-red-50"
-                        >
-                          حذف نهائي
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
+                      استعادة
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!window.confirm('حذف هذا السجل نهائياً من السلة؟')) return
+                        await purgeTrashEntry(entry.id)
+                        setTrashList(getTrash())
+                        setProductMsg('تم حذف السجل من السلة.')
+                      }}
+                      className="rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-extrabold text-red-600 hover:bg-red-50"
+                    >
+                      حذف نهائي
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
-        </section>
+        </AdminSection>
 
-        <section>
-          <h2 className="mb-4 text-lg font-extrabold text-gray-900">الطلبات</h2>
+        <AdminSection title="الطلبات" badge={orders.length} defaultOpen>
           {orders.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">
+            <p className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
               لا توجد طلبات بعد. الطلبات تُحفظ محلياً في المتصفح عند تأكيد الزبون للطلب.
             </p>
           ) : (
@@ -1221,12 +1221,9 @@ export default function Admin() {
               })}
             </ul>
           )}
-        </section>
+        </AdminSection>
 
-        <section>
-          <h2 className="mb-2 text-lg font-extrabold text-gray-900">
-            الأكثر مبيعاً اليوم (المتجر)
-          </h2>
+        <AdminSection title="الأكثر مبيعاً اليوم (المتجر)">
           <p className="mb-4 text-sm text-gray-600">
             حدّد المنتجات التي تظهر في قسم «الأكثر مبيعاً اليوم». إن لم تُحدّد أي منتج،
             يُعرض <span className="font-bold text-gray-800">كل المنتجات</span> كما
@@ -1293,12 +1290,9 @@ export default function Admin() {
               })}
             </ul>
           </div>
-        </section>
+        </AdminSection>
 
-        <section>
-          <h2 className="mb-2 text-lg font-extrabold text-gray-900">
-            تعديل أي منتج (سعر، صور، وصف…)
-          </h2>
+        <AdminSection title="تعديل أي منتج (سعر، صور، وصف…)">
           <p className="mb-4 text-sm text-gray-600">
             المنتجات الأساسية تُحفظ كتعديل محلي في المتصفح. منتجاتك المضافة تُحدَّث مباشرة في
             التخزين.
@@ -1384,12 +1378,9 @@ export default function Admin() {
               )
             })}
           </ul>
-        </section>
+        </AdminSection>
 
-        <section>
-          <h2 className="mb-4 text-lg font-extrabold text-gray-900" id="admin-product-form-title">
-            {editingProductId ? 'تعديل المنتج' : 'إضافة منتج'}
-          </h2>
+        <AdminSection title={editingProductId ? 'تعديل المنتج' : 'إضافة منتج'} defaultOpen>
           {editingProductId && (
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
               <span className="font-bold text-amber-900">
@@ -1853,12 +1844,9 @@ export default function Admin() {
               )}
             </div>
           </form>
-        </section>
+        </AdminSection>
 
-        <section>
-          <h2 className="mb-4 text-lg font-extrabold text-gray-900">
-            منتجاتك المضافة ({extra.length})
-          </h2>
+        <AdminSection title="منتجاتك المضافة" badge={extra.length}>
           {extra.length === 0 ? (
             <p className="text-sm text-gray-500">لم تضف منتجات بعد.</p>
           ) : (
@@ -1930,7 +1918,7 @@ export default function Admin() {
               })}
             </ul>
           )}
-        </section>
+        </AdminSection>
       </div>
     </div>
   )
