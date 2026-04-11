@@ -431,13 +431,16 @@ export async function getOrders() {
     const list = readJson('taager_orders', [])
     return Array.isArray(list) ? list : []
   }
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('orders')
     .select('*')
-    .order('created_at', { ascending: false })
-  return Array.isArray(data) ? data.map((r) => ({
+  if (error) {
+    console.error('[getOrders] Supabase error:', error)
+    return []
+  }
+  const rows = Array.isArray(data) ? data.map((r) => ({
     id: r.id,
-    createdAt: r.created_at,
+    createdAt: r.created_at ? new Date(r.created_at).getTime() : (r.order_ts ?? 0),
     status: r.status,
     productId: r.product_id,
     productTitle: r.product_title,
@@ -455,6 +458,7 @@ export async function getOrders() {
     validatedAt: r.validated_at,
     ...( r.data || {}),
   })) : []
+  return rows.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
 }
 
 export async function updateOrder(id, patch) {
@@ -498,7 +502,6 @@ export async function addOrder(order) {
   }
   const { error } = await supabase.from('orders').insert({
     id,
-    created_at: row.createdAt,
     status: 'pending',
     product_id: order.productId,
     product_title: order.productTitle,
