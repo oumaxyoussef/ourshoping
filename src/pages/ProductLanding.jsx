@@ -194,7 +194,7 @@ export default function ProductLanding() {
 
   const fullPhone = `${form.phonePrefix}${form.phoneRest.replace(/\D/g, '')}`
 
-  const submitCod = (e) => {
+  const submitCod = async (e) => {
     e.preventDefault()
     setFormError('')
     if (!form.name.trim()) {
@@ -229,7 +229,7 @@ export default function ProductLanding() {
       },
       selectedProduct,
     )
-    addOrder({
+    await addOrder({
       name: form.name.trim(),
       phone: fullPhone,
       city: form.city.trim(),

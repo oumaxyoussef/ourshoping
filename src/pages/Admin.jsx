@@ -129,7 +129,7 @@ export default function Admin() {
   const [logged, setLogged] = useState(() => isAdminLoggedIn())
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState('')
-  const [orders, setOrders] = useState(() => getOrders())
+  const [orders, setOrders] = useState([])
   const [expandedOrderId, setExpandedOrderId] = useState(null)
   const [extra, setExtra] = useState([])
   const [featuredIds, setFeaturedIds] = useState([])
@@ -175,22 +175,23 @@ export default function Admin() {
   const [trashOpen, setTrashOpen] = useState(false)
 
   useEffect(() => {
-    Promise.all([getExtraProducts(), getFeaturedProductIds(), getHeaderBanners(), getCategories(), getMergedProducts()])
-      .then(([xtra, featured, banners, cats, products]) => {
+    Promise.all([getExtraProducts(), getFeaturedProductIds(), getHeaderBanners(), getCategories(), getMergedProducts(), getOrders()])
+      .then(([xtra, featured, banners, cats, products, ords]) => {
         setExtra(xtra)
         setFeaturedIds(featured)
         setBannerUrls(banners)
         setShopCategories(cats)
         setAllProducts(products)
+        setOrders(ords)
       })
   }, [])
 
   useEffect(() => {
     const sync = async () => {
-      const [xtra, featured, banners, cats, products] = await Promise.all([
-        getExtraProducts(), getFeaturedProductIds(), getHeaderBanners(), getCategories(), getMergedProducts()
+      const [xtra, featured, banners, cats, products, ords] = await Promise.all([
+        getExtraProducts(), getFeaturedProductIds(), getHeaderBanners(), getCategories(), getMergedProducts(), getOrders()
       ])
-      setOrders(getOrders())
+      setOrders(ords)
       setExtra(xtra)
       setFeaturedIds(featured)
       setBannerUrls(banners)
@@ -1139,13 +1140,13 @@ export default function Admin() {
                           {status !== 'validated' && (
                             <button
                               type="button"
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation()
-                                updateOrder(o.id, {
+                                await updateOrder(o.id, {
                                   status: 'validated',
                                   validatedAt: Date.now(),
                                 })
-                                setOrders(getOrders())
+                                setOrders(await getOrders())
                               }}
                               className="rounded-full bg-green-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-green-700"
                             >
@@ -1163,7 +1164,7 @@ export default function Admin() {
                           )}
                           <button
                             type="button"
-                            onClick={(e) => {
+                            onClick={async (e) => {
                               e.stopPropagation()
                               if (
                                 !window.confirm(
@@ -1171,8 +1172,8 @@ export default function Admin() {
                                 )
                               )
                                 return
-                              removeOrder(o.id)
-                              setOrders(getOrders())
+                              await removeOrder(o.id)
+                              setOrders(await getOrders())
                               setExpandedOrderId((id) =>
                                 id === o.id ? null : id,
                               )

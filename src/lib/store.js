@@ -424,34 +424,97 @@ export async function removeExtraProduct(id) {
   notifyStoreUpdate()
 }
 
-// ─── Orders (localStorage — per device) ──────────────────────────────────────
+// ─── Orders (Supabase — shared across devices) ───────────────────────────────
 
-export function getOrders() {
-  const list = readJson('taager_orders', [])
-  return Array.isArray(list) ? list : []
+export async function getOrders() {
+  if (!supabase) {
+    const list = readJson('taager_orders', [])
+    return Array.isArray(list) ? list : []
+  }
+  const { data } = await supabase
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false })
+  return Array.isArray(data) ? data.map((r) => ({
+    id: r.id,
+    createdAt: r.created_at,
+    status: r.status,
+    productId: r.product_id,
+    productTitle: r.product_title,
+    name: r.name,
+    phone: r.phone,
+    city: r.city,
+    currency: r.currency,
+    quantity: r.quantity,
+    priceSar: r.price_sar,
+    priceAed: r.price_aed,
+    unitPriceSar: r.unit_price_sar,
+    unitPriceAed: r.unit_price_aed,
+    lineTotalSar: r.line_total_sar,
+    lineTotalAed: r.line_total_aed,
+    validatedAt: r.validated_at,
+    ...( r.data || {}),
+  })) : []
 }
 
-export function updateOrder(id, patch) {
-  const orders = getOrders()
-  const idx = orders.findIndex((o) => o.id === id)
-  if (idx < 0) return false
-  orders[idx] = { ...orders[idx], ...patch }
-  localStorage.setItem('taager_orders', JSON.stringify(orders))
+export async function updateOrder(id, patch) {
+  if (!supabase) {
+    const orders = readJson('taager_orders', [])
+    const idx = orders.findIndex((o) => o.id === id)
+    if (idx < 0) return false
+    orders[idx] = { ...orders[idx], ...patch }
+    localStorage.setItem('taager_orders', JSON.stringify(orders))
+    notifyStoreUpdate()
+    return true
+  }
+  const dbPatch = {}
+  if (patch.status !== undefined) dbPatch.status = patch.status
+  if (patch.validatedAt !== undefined) dbPatch.validated_at = patch.validatedAt
+  await supabase.from('orders').update(dbPatch).eq('id', id)
   notifyStoreUpdate()
   return true
 }
 
-export function removeOrder(id) {
-  const orders = getOrders().filter((o) => o.id !== id)
-  localStorage.setItem('taager_orders', JSON.stringify(orders))
+export async function removeOrder(id) {
+  if (!supabase) {
+    const orders = readJson('taager_orders', []).filter((o) => o.id !== id)
+    localStorage.setItem('taager_orders', JSON.stringify(orders))
+    notifyStoreUpdate()
+    return
+  }
+  await supabase.from('orders').delete().eq('id', id)
   notifyStoreUpdate()
 }
 
-export function addOrder(order) {
-  const orders = getOrders()
-  const row = { ...order, id: `ord-${Date.now()}`, createdAt: Date.now(), status: 'pending' }
-  orders.unshift(row)
-  localStorage.setItem('taager_orders', JSON.stringify(orders))
+export async function addOrder(order) {
+  const id = `ord-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+  const row = { ...order, id, createdAt: Date.now(), status: 'pending' }
+  if (!supabase) {
+    const orders = readJson('taager_orders', [])
+    orders.unshift(row)
+    localStorage.setItem('taager_orders', JSON.stringify(orders))
+    notifyStoreUpdate()
+    return
+  }
+  await supabase.from('orders').insert({
+    id,
+    created_at: row.createdAt,
+    status: 'pending',
+    product_id: order.productId,
+    product_title: order.productTitle,
+    name: order.name,
+    phone: order.phone,
+    city: order.city,
+    currency: order.currency,
+    quantity: order.quantity ?? 1,
+    price_sar: order.priceSar,
+    price_aed: order.priceAed,
+    unit_price_sar: order.unitPriceSar,
+    unit_price_aed: order.unitPriceAed,
+    line_total_sar: order.lineTotalSar,
+    line_total_aed: order.lineTotalAed,
+    data: order,
+  })
   notifyStoreUpdate()
 }
 
