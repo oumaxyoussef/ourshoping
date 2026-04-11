@@ -39,7 +39,7 @@ export function getStoredCountry() {
   } catch {
     /* ignore */
   }
-  return null
+  return 'SA'
 }
 
 export function setStoredCountry(countryId) {
