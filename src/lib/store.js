@@ -411,10 +411,17 @@ export async function addExtraProduct(product) {
     const extra = await readExtraRaw()
     extra.push(p)
     extraProductsCache = extra
-    if (supabase) await supabase.from('extra_products').insert({ id, data: p })
+    if (supabase) {
+      const { error } = await supabase.from('extra_products').insert({ id, data: p })
+      if (error) console.error('[addExtraProduct] Supabase error:', error)
+      else console.log('[addExtraProduct] saved to Supabase:', id)
+    } else {
+      console.warn('[addExtraProduct] supabase not connected — product only in memory!')
+    }
     notifyStoreUpdate()
     return true
-  } catch {
+  } catch (e) {
+    console.error('[addExtraProduct] exception:', e)
     return false
   }
 }
