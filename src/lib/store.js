@@ -496,7 +496,7 @@ export async function addOrder(order) {
     notifyStoreUpdate()
     return
   }
-  await supabase.from('orders').insert({
+  const { error } = await supabase.from('orders').insert({
     id,
     created_at: row.createdAt,
     status: 'pending',
@@ -515,6 +515,13 @@ export async function addOrder(order) {
     line_total_aed: order.lineTotalAed,
     data: order,
   })
+  if (error) {
+    console.error('[addOrder] Supabase error:', error)
+    // fallback to localStorage if Supabase fails
+    const orders = readJson('taager_orders', [])
+    orders.unshift(row)
+    localStorage.setItem('taager_orders', JSON.stringify(orders))
+  }
   notifyStoreUpdate()
 }
 
