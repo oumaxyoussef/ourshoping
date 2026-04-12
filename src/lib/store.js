@@ -152,6 +152,8 @@ const DEFAULT_REVIEW_COUNT = 48
 const DEFAULT_SOLD_COUNT = 320
 
 const EXTRA_LOCAL_KEY = 'taager_extra_products'
+const EXTRA_LOCAL_TS_KEY = 'taager_extra_products_ts'
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
 function readExtraLocal() {
   try {
@@ -162,8 +164,18 @@ function readExtraLocal() {
   } catch { return [] }
 }
 
+function isCacheFresh() {
+  try {
+    const ts = parseInt(localStorage.getItem(EXTRA_LOCAL_TS_KEY) ?? '0', 10)
+    return Date.now() - ts < CACHE_TTL_MS
+  } catch { return false }
+}
+
 function saveExtraLocal(list) {
-  try { localStorage.setItem(EXTRA_LOCAL_KEY, JSON.stringify(list)) } catch {}
+  try {
+    localStorage.setItem(EXTRA_LOCAL_KEY, JSON.stringify(list))
+    localStorage.setItem(EXTRA_LOCAL_TS_KEY, String(Date.now()))
+  } catch {}
 }
 
 let extraProductsCache = null
@@ -255,13 +267,19 @@ function startBgRetry() {
 }
 
 async function readExtraRaw() {
-  // Return cache if we already fetched from Supabase successfully
+  // Return cache if already fetched from Supabase successfully
   if (extraProductsCache !== null && supabaseFetchedExtra) return extraProductsCache
 
   // Load from localStorage immediately (instant, no network)
   if (extraProductsCache === null) {
     const local = readExtraLocal()
     extraProductsCache = local.length > 0 ? local : []
+  }
+
+  // Skip Supabase fetch if cache is still fresh (< 5 min old) — saves IO budget
+  if (isCacheFresh() && extraProductsCache.length > 0) {
+    supabaseFetchedExtra = true
+    return extraProductsCache
   }
 
   // Always try Supabase if we haven't succeeded yet
