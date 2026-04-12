@@ -160,11 +160,21 @@ let trashCache = null
 async function readExtraRaw() {
   if (extraProductsCache !== null) return extraProductsCache
   if (!supabase) { extraProductsCache = []; return [] }
-  const { data, error } = await supabase.from('extra_products').select('id, data')
-  if (error) console.error('[store] extra_products fetch error:', error)
-  extraProductsCache = Array.isArray(data) ? data.map((r) => ({ ...r.data, id: r.id })) : []
-  console.log('[store] extra_products loaded:', extraProductsCache.length, 'products')
-  return extraProductsCache
+  // retry once on timeout
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { data, error } = await supabase.from('extra_products').select('id, data')
+    if (error) {
+      console.error('[store] extra_products fetch error:', error)
+      if (attempt === 0) continue // retry
+      extraProductsCache = []
+      return []
+    }
+    extraProductsCache = Array.isArray(data) ? data.map((r) => ({ ...r.data, id: r.id })) : []
+    console.log('[store] extra_products loaded:', extraProductsCache.length, 'products')
+    return extraProductsCache
+  }
+  extraProductsCache = []
+  return []
 }
 
 async function getEditsMap() {
@@ -196,11 +206,12 @@ async function persistTrash(entries) {
 
 export async function hydrateStoreCaches() {
   await Promise.all([readExtraRaw(), getEditsMap()])
-  if (!supabase) { trashCache = []; return }
+  if (!supabase) { trashCache = []; notifyStoreUpdate(); return }
   const { data: trashData } = await supabase.from('trash').select('id, deleted_at, product')
   trashCache = Array.isArray(trashData)
     ? trashData.map((r) => ({ id: r.id, deletedAt: r.deleted_at, product: r.product }))
     : []
+  notifyStoreUpdate()
 }
 
 // ─── Product helpers ──────────────────────────────────────────────────────────
