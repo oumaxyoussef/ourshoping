@@ -217,8 +217,10 @@ function mapOrderRow(r) {
 
 function startBgRetryOrders() {
   if (bgRetryOrdersTimer || supabaseFetchedOrders || !supabase) return
+  let attempts = 0
   bgRetryOrdersTimer = setInterval(async () => {
-    if (supabaseFetchedOrders) { clearInterval(bgRetryOrdersTimer); bgRetryOrdersTimer = null; return }
+    if (supabaseFetchedOrders || attempts >= 3) { clearInterval(bgRetryOrdersTimer); bgRetryOrdersTimer = null; return }
+    attempts++
     const { data, error } = await supabase.from('orders').select('*')
     if (!error && Array.isArray(data)) {
       ordersCache = data.map(mapOrderRow).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
@@ -229,13 +231,15 @@ function startBgRetryOrders() {
       console.log('[store] bg orders loaded:', ordersCache.length)
       notifyStoreUpdate()
     }
-  }, 5000)
+  }, 15000)
 }
 
 function startBgRetry() {
   if (bgRetryTimer || supabaseFetchedExtra || !supabase) return
+  let attempts = 0
   bgRetryTimer = setInterval(async () => {
-    if (supabaseFetchedExtra) { clearInterval(bgRetryTimer); bgRetryTimer = null; return }
+    if (supabaseFetchedExtra || attempts >= 3) { clearInterval(bgRetryTimer); bgRetryTimer = null; return }
+    attempts++
     console.log('[store] background retry: fetching extra_products...')
     const { data, error } = await supabase.from('extra_products').select('id, data')
     if (!error && Array.isArray(data)) {
@@ -247,7 +251,7 @@ function startBgRetry() {
       console.log('[store] background retry success:', extraProductsCache.length, 'products')
       notifyStoreUpdate()
     }
-  }, 5000)
+  }, 15000)
 }
 
 async function readExtraRaw() {
@@ -308,12 +312,9 @@ async function persistTrash(entries) {
 }
 
 export async function hydrateStoreCaches() {
-  await Promise.all([readExtraRaw(), getEditsMap()])
+  // Only fetch extra_products (most important). Orders/trash load lazily on demand.
+  await readExtraRaw()
   if (!supabase) { trashCache = []; ordersCache = []; notifyStoreUpdate(); return }
-  const { data: trashData } = await supabase.from('trash').select('id, deleted_at, product')
-  trashCache = Array.isArray(trashData)
-    ? trashData.map((r) => ({ id: r.id, deletedAt: r.deleted_at, product: r.product }))
-    : []
   notifyStoreUpdate()
 }
 
