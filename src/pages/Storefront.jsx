@@ -686,7 +686,12 @@ export default function Storefront() {
 
           {country && filtered.length === 0 && (
             <div className="space-y-2 py-12 text-center text-gray-600">
-              {productsList.length > 0 &&
+              {productsList.length === 0 ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-temu" />
+                  <p className="text-sm font-bold text-gray-500">جاري تحميل المنتجات…</p>
+                </div>
+              ) : productsList.length > 0 &&
               !search.trim() &&
               !selectedCategoryId &&
               productsList.some((p) => productAvailableInCountry(p, country)) ===

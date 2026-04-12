@@ -170,8 +170,27 @@ let extraProductsCache = null
 let productEditsCache = null
 let trashCache = null
 let supabaseFetchedExtra = false
+let bgRetryTimer = null
 
 // ─── Supabase-backed persistence ─────────────────────────────────────────────
+
+function startBgRetry() {
+  if (bgRetryTimer || supabaseFetchedExtra || !supabase) return
+  bgRetryTimer = setInterval(async () => {
+    if (supabaseFetchedExtra) { clearInterval(bgRetryTimer); bgRetryTimer = null; return }
+    console.log('[store] background retry: fetching extra_products...')
+    const { data, error } = await supabase.from('extra_products').select('id, data')
+    if (!error && Array.isArray(data)) {
+      extraProductsCache = data.map((r) => ({ ...r.data, id: r.id }))
+      saveExtraLocal(extraProductsCache)
+      supabaseFetchedExtra = true
+      clearInterval(bgRetryTimer)
+      bgRetryTimer = null
+      console.log('[store] background retry success:', extraProductsCache.length, 'products')
+      notifyStoreUpdate()
+    }
+  }, 5000)
+}
 
 async function readExtraRaw() {
   // Return cache if we already fetched from Supabase successfully
@@ -195,7 +214,8 @@ async function readExtraRaw() {
       if (extraProductsCache.length !== prev) notifyStoreUpdate()
     } else if (error) {
       console.error('[store] extra_products fetch error:', error)
-      // keep localStorage data, will retry next call
+      // Start background retry every 5s until Supabase wakes up
+      startBgRetry()
     }
   }
 
