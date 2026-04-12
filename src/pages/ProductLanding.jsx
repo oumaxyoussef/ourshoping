@@ -214,7 +214,7 @@ export default function ProductLanding() {
       return
     }
     if (!form.city.trim()) {
-      setFormError('الرجاء إدخال المدينة')
+      setFormError('الرجاء إدخال المدينة والمحافظة')
       return
     }
     if (!selectedProduct) {

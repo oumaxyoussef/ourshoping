@@ -207,7 +207,7 @@ export default function CheckoutModal({
           </div>
           <div>
             <label htmlFor="city" className="mb-1 block text-sm font-bold text-gray-700">
-              المدينة
+              المدينة والمحافظة
             </label>
             <input
               id="city"

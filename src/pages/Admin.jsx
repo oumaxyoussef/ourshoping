@@ -1154,7 +1154,7 @@ export default function Admin() {
                             </dd>
                           </div>
                           <div className="sm:col-span-2">
-                            <dt className="text-xs font-bold text-gray-500">المدينة</dt>
+                            <dt className="text-xs font-bold text-gray-500">المدينة والمحافظة</dt>
                             <dd className="text-gray-900">{o.city}</dd>
                           </div>
                           <div>
