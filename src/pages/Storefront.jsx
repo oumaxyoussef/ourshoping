@@ -157,7 +157,7 @@ function ProductTile({ p, country, onOpenGallery, onCheckout }) {
       <div className="flex flex-1 flex-col p-2 sm:p-2.5">
         <h3 className="line-clamp-2 text-xs font-bold leading-snug text-gray-900 sm:text-sm">
           <Link
-            to={productLandingPath(p.id)}
+            to={productLandingPath(p.id, country)}
             className="hover:text-temu hover:underline"
             onClick={(e) => e.stopPropagation()}
           >

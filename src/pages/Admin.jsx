@@ -1899,8 +1899,8 @@ export default function Admin() {
                       <p className="mt-1.5 break-all font-mono text-[10px] leading-tight text-gray-400">
                         رابط الإعلان:{' '}
                         {typeof window !== 'undefined'
-                          ? `${window.location.origin}${productLandingPath(p.id)}`
-                          : productLandingPath(p.id)}
+                          ? `${window.location.origin}${productLandingPath(p.id, p.markets?.[0])}`
+                          : productLandingPath(p.id, p.markets?.[0])}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import CheckoutModal from '../components/CheckoutModal.jsx'
 import CountryDropdown from '../components/CountryDropdown.jsx'
 import CountryPromptModal from '../components/CountryPromptModal.jsx'
@@ -16,6 +16,7 @@ import {
   productAvailableInCountry,
 } from '../lib/store.js'
 import {
+  COUNTRY_IDS,
   currencyForCountry,
   defaultPhonePrefixForCountry,
   getStoredCountry,
@@ -69,6 +70,7 @@ function setMetaTag(attr, key, content) {
 
 export default function ProductLanding() {
   const { productId } = useParams()
+  const [searchParams] = useSearchParams()
   const [productsList, setProductsList] = useState([])
 
   useEffect(() => {
@@ -86,7 +88,11 @@ export default function ProductLanding() {
     return productsList.find((p) => p.id === decoded) ?? null
   }, [productsList, productId])
 
-  const [country, setCountry] = useState(() => getStoredCountry())
+  const [country, setCountry] = useState(() => {
+    const c = searchParams.get('c')
+    if (c && COUNTRY_IDS.includes(c)) return c
+    return getStoredCountry()
+  })
   const currency = useMemo(
     () => (country ? currencyForCountry(country) : 'SAR'),
     [country],
