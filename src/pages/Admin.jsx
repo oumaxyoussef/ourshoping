@@ -1890,29 +1890,41 @@ export default function Admin() {
                           : productLandingPath(p.id)}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (
-                          !window.confirm(
-                            `نقل «${p.title}» إلى سلة المحذوفات؟`,
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => beginEditProduct(p)}
+                        className="inline-flex items-center gap-1 text-sm font-bold text-temu hover:underline"
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                        تعديل
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (
+                            !window.confirm(
+                              `نقل «${p.title}» إلى سلة المحذوفات؟`,
+                            )
                           )
-                        )
-                          return
-                        if (await softDeleteProduct(p.id)) {
-                          setTrashList(getTrash())
-                          setFeaturedIds(await getFeaturedProductIds())
-                          setExtra(await getExtraProducts())
-                          setStoreTick((t) => t + 1)
-                          if (editingProductId === p.id) resetProductForm()
-                          setProductMsg('تم نقل المنتج إلى سلة المحذوفات.')
-                        }
-                      }}
-                      className="inline-flex items-center gap-1 text-sm font-bold text-red-600 hover:underline"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                      حذف
-                    </button>
+                            return
+                          if (await softDeleteProduct(p.id)) {
+                            setTrashList(getTrash())
+                            setFeaturedIds(await getFeaturedProductIds())
+                            setExtra(await getExtraProducts())
+                            setStoreTick((t) => t + 1)
+                            if (editingProductId === p.id) resetProductForm()
+                            setProductMsg('تم نقل المنتج إلى سلة المحذوفات.')
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 text-sm font-bold text-red-600 hover:underline"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                        حذف
+                      </button>
+                    </div>
                   </li>
                 )
               })}
