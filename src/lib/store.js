@@ -171,8 +171,66 @@ let productEditsCache = null
 let trashCache = null
 let supabaseFetchedExtra = false
 let bgRetryTimer = null
+let supabaseFetchedOrders = false
+let bgRetryOrdersTimer = null
+let ordersCache = null
+
+const ORDERS_LOCAL_KEY = 'taager_orders_cache'
+
+function readOrdersLocal() {
+  try {
+    const raw = localStorage.getItem(ORDERS_LOCAL_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch { return [] }
+}
+
+function saveOrdersLocal(list) {
+  try { localStorage.setItem(ORDERS_LOCAL_KEY, JSON.stringify(list)) } catch {}
+}
+
+function mapOrderRow(r) {
+  return {
+    id: r.id,
+    createdAt: r.created_at ? new Date(r.created_at).getTime() : (r.order_ts ?? 0),
+    status: r.status,
+    productId: r.product_id,
+    productTitle: r.product_title,
+    name: r.name,
+    phone: r.phone,
+    city: r.city,
+    currency: r.currency,
+    quantity: r.quantity,
+    priceSar: r.price_sar,
+    priceAed: r.price_aed,
+    unitPriceSar: r.unit_price_sar,
+    unitPriceAed: r.unit_price_aed,
+    lineTotalSar: r.line_total_sar,
+    lineTotalAed: r.line_total_aed,
+    validatedAt: r.validated_at,
+    ...(r.data || {}),
+  }
+}
 
 // ─── Supabase-backed persistence ─────────────────────────────────────────────
+
+function startBgRetryOrders() {
+  if (bgRetryOrdersTimer || supabaseFetchedOrders || !supabase) return
+  bgRetryOrdersTimer = setInterval(async () => {
+    if (supabaseFetchedOrders) { clearInterval(bgRetryOrdersTimer); bgRetryOrdersTimer = null; return }
+    const { data, error } = await supabase.from('orders').select('*')
+    if (!error && Array.isArray(data)) {
+      ordersCache = data.map(mapOrderRow).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+      saveOrdersLocal(ordersCache)
+      supabaseFetchedOrders = true
+      clearInterval(bgRetryOrdersTimer)
+      bgRetryOrdersTimer = null
+      console.log('[store] bg orders loaded:', ordersCache.length)
+      notifyStoreUpdate()
+    }
+  }, 5000)
+}
 
 function startBgRetry() {
   if (bgRetryTimer || supabaseFetchedExtra || !supabase) return
@@ -251,7 +309,7 @@ async function persistTrash(entries) {
 
 export async function hydrateStoreCaches() {
   await Promise.all([readExtraRaw(), getEditsMap()])
-  if (!supabase) { trashCache = []; notifyStoreUpdate(); return }
+  if (!supabase) { trashCache = []; ordersCache = []; notifyStoreUpdate(); return }
   const { data: trashData } = await supabase.from('trash').select('id, deleted_at, product')
   trashCache = Array.isArray(trashData)
     ? trashData.map((r) => ({ id: r.id, deletedAt: r.deleted_at, product: r.product }))
@@ -500,43 +558,39 @@ export async function getOrders() {
     const list = readJson('taager_orders', [])
     return Array.isArray(list) ? list : []
   }
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-  if (error) {
-    console.error('[getOrders] Supabase error:', error)
-    return []
+
+  // Return cache if already fetched from Supabase
+  if (ordersCache !== null && supabaseFetchedOrders) return ordersCache
+
+  // Load from localStorage immediately
+  if (ordersCache === null) {
+    ordersCache = readOrdersLocal()
   }
-  const rows = Array.isArray(data) ? data.map((r) => ({
-    id: r.id,
-    createdAt: r.created_at ? new Date(r.created_at).getTime() : (r.order_ts ?? 0),
-    status: r.status,
-    productId: r.product_id,
-    productTitle: r.product_title,
-    name: r.name,
-    phone: r.phone,
-    city: r.city,
-    currency: r.currency,
-    quantity: r.quantity,
-    priceSar: r.price_sar,
-    priceAed: r.price_aed,
-    unitPriceSar: r.unit_price_sar,
-    unitPriceAed: r.unit_price_aed,
-    lineTotalSar: r.line_total_sar,
-    lineTotalAed: r.line_total_aed,
-    validatedAt: r.validated_at,
-    ...( r.data || {}),
-  })) : []
-  return rows.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+
+  // Try Supabase
+  if (!supabaseFetchedOrders) {
+    const { data, error } = await supabase.from('orders').select('*')
+    if (!error && Array.isArray(data)) {
+      ordersCache = data.map(mapOrderRow).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+      saveOrdersLocal(ordersCache)
+      supabaseFetchedOrders = true
+      console.log('[store] orders loaded from Supabase:', ordersCache.length)
+    } else if (error) {
+      console.error('[getOrders] Supabase error:', error)
+      startBgRetryOrders()
+    }
+  }
+
+  return ordersCache ?? []
 }
 
 export async function updateOrder(id, patch) {
+  // Update local cache immediately
+  if (ordersCache) {
+    const idx = ordersCache.findIndex((o) => o.id === id)
+    if (idx >= 0) { ordersCache[idx] = { ...ordersCache[idx], ...patch }; saveOrdersLocal(ordersCache) }
+  }
   if (!supabase) {
-    const orders = readJson('taager_orders', [])
-    const idx = orders.findIndex((o) => o.id === id)
-    if (idx < 0) return false
-    orders[idx] = { ...orders[idx], ...patch }
-    localStorage.setItem('taager_orders', JSON.stringify(orders))
     notifyStoreUpdate()
     return true
   }
@@ -549,9 +603,10 @@ export async function updateOrder(id, patch) {
 }
 
 export async function removeOrder(id) {
+  ordersCache = (ordersCache ?? []).filter((o) => o.id !== id)
+  saveOrdersLocal(ordersCache)
   if (!supabase) {
-    const orders = readJson('taager_orders', []).filter((o) => o.id !== id)
-    localStorage.setItem('taager_orders', JSON.stringify(orders))
+    localStorage.setItem('taager_orders', JSON.stringify(ordersCache))
     notifyStoreUpdate()
     return
   }
@@ -562,10 +617,11 @@ export async function removeOrder(id) {
 export async function addOrder(order) {
   const id = `ord-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
   const row = { ...order, id, createdAt: Date.now(), status: 'pending' }
+  // Update local cache immediately
+  if (ordersCache === null) ordersCache = readOrdersLocal()
+  ordersCache.unshift(row)
+  saveOrdersLocal(ordersCache)
   if (!supabase) {
-    const orders = readJson('taager_orders', [])
-    orders.unshift(row)
-    localStorage.setItem('taager_orders', JSON.stringify(orders))
     notifyStoreUpdate()
     return
   }
@@ -587,13 +643,7 @@ export async function addOrder(order) {
     line_total_aed: order.lineTotalAed,
     data: order,
   })
-  if (error) {
-    console.error('[addOrder] Supabase error:', error)
-    // fallback to localStorage if Supabase fails
-    const orders = readJson('taager_orders', [])
-    orders.unshift(row)
-    localStorage.setItem('taager_orders', JSON.stringify(orders))
-  }
+  if (error) console.error('[addOrder] Supabase error:', error)
   notifyStoreUpdate()
 }
 
