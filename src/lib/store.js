@@ -169,33 +169,36 @@ function saveExtraLocal(list) {
 let extraProductsCache = null
 let productEditsCache = null
 let trashCache = null
+let supabaseFetchedExtra = false
 
 // ─── Supabase-backed persistence ─────────────────────────────────────────────
 
 async function readExtraRaw() {
-  if (extraProductsCache !== null) return extraProductsCache
-  // Load from localStorage immediately (no network needed)
-  const local = readExtraLocal()
-  if (local.length > 0) {
-    extraProductsCache = local
+  // Return cache if we already fetched from Supabase successfully
+  if (extraProductsCache !== null && supabaseFetchedExtra) return extraProductsCache
+
+  // Load from localStorage immediately (instant, no network)
+  if (extraProductsCache === null) {
+    const local = readExtraLocal()
+    extraProductsCache = local.length > 0 ? local : []
   }
-  // Try Supabase (may be slow/timeout on free tier)
-  if (supabase) {
+
+  // Always try Supabase if we haven't succeeded yet
+  if (supabase && !supabaseFetchedExtra) {
     const { data, error } = await supabase.from('extra_products').select('id, data')
     if (!error && Array.isArray(data)) {
-      const prev = extraProductsCache?.length ?? 0
+      const prev = extraProductsCache.length
       extraProductsCache = data.map((r) => ({ ...r.data, id: r.id }))
       saveExtraLocal(extraProductsCache)
+      supabaseFetchedExtra = true
       console.log('[store] extra_products loaded from Supabase:', extraProductsCache.length)
-      // notify UI if Supabase returned more/different data than local cache
       if (extraProductsCache.length !== prev) notifyStoreUpdate()
     } else if (error) {
       console.error('[store] extra_products fetch error:', error)
-      if (!extraProductsCache) extraProductsCache = []
+      // keep localStorage data, will retry next call
     }
-  } else {
-    if (!extraProductsCache) extraProductsCache = []
   }
+
   return extraProductsCache
 }
 
