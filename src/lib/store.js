@@ -183,12 +183,14 @@ async function readExtraRaw() {
   if (supabase) {
     const { data, error } = await supabase.from('extra_products').select('id, data')
     if (!error && Array.isArray(data)) {
+      const prev = extraProductsCache?.length ?? 0
       extraProductsCache = data.map((r) => ({ ...r.data, id: r.id }))
       saveExtraLocal(extraProductsCache)
       console.log('[store] extra_products loaded from Supabase:', extraProductsCache.length)
+      // notify UI if Supabase returned more/different data than local cache
+      if (extraProductsCache.length !== prev) notifyStoreUpdate()
     } else if (error) {
       console.error('[store] extra_products fetch error:', error)
-      // keep localStorage data
       if (!extraProductsCache) extraProductsCache = []
     }
   } else {
