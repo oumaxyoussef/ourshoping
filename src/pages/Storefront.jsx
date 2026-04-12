@@ -15,6 +15,7 @@ import {
   addOrder,
   DEFAULT_CATEGORIES,
   DEFAULT_HEADER_BANNERS,
+  getBaseProductsSync,
   getCategories,
   getFeaturedProductIds,
   getHeaderBanners,
@@ -211,7 +212,7 @@ function ProductTile({ p, country, onOpenGallery, onCheckout }) {
 }
 
 export default function Storefront() {
-  const [productsList, setProductsList] = useState([])
+  const [productsList, setProductsList] = useState(() => getBaseProductsSync())
   const [featuredIds, setFeaturedIds] = useState([])
   const [headerBanners, setHeaderBanners] = useState(DEFAULT_HEADER_BANNERS)
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES)

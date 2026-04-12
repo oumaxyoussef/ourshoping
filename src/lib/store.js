@@ -391,6 +391,15 @@ export async function getMergedProducts() {
   ]
 }
 
+/** Instant sync — returns base products + localStorage extras without waiting for Supabase */
+export function getBaseProductsSync() {
+  const local = readExtraLocal()
+  return [
+    ...baseProducts.map((p) => withDefaultReviews({ ...p })),
+    ...local.map((p) => withDefaultReviews({ ...p })),
+  ]
+}
+
 export function getTrash() {
   return Array.isArray(trashCache) ? trashCache : []
 }
