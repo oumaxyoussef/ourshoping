@@ -324,6 +324,16 @@ export default function Admin() {
     setLogged(false)
   }
 
+  const uploadImageToStorage = async (file, folder = 'photos') => {
+    if (!supabase) throw new Error('Supabase غير متوفر')
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error } = await supabase.storage.from('product-images').upload(path, file)
+    if (error) throw new Error(error.message || 'فشل رفع الصورة')
+    const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+    return data.publicUrl
+  }
+
   const handlePhotoFiles = async (e) => {
     const { files } = e.target
     if (!files?.length) return
@@ -335,11 +345,13 @@ export default function Admin() {
       return
     }
     try {
-      const urls = await readFilesAsDataUrls(files, {
-        maxCount: room,
-        maxBytesPerFile: MAX_IMAGE_FILE_BYTES,
-        acceptPrefix: 'image/',
-      })
+      const list = Array.from(files).slice(0, room)
+      const urls = []
+      for (const file of list) {
+        if (!file.type.startsWith('image/')) throw new Error('نوع الملف غير مدعوم')
+        if (file.size > MAX_IMAGE_FILE_BYTES) throw new Error(`صورة كبيرة جداً (الحد ${Math.round(MAX_IMAGE_FILE_BYTES / 1048576)} ميجا)`)
+        urls.push(await uploadImageToStorage(file, 'photos'))
+      }
       setPhotoItems((prev) => [...prev, ...urls].slice(0, MAX_PHOTOS))
     } catch (err) {
       setProductMsg(err?.message || 'خطأ في رفع الصور')
@@ -381,11 +393,13 @@ export default function Admin() {
       return
     }
     try {
-      const urls = await readFilesAsDataUrls(files, {
-        maxCount: room,
-        maxBytesPerFile: MAX_IMAGE_FILE_BYTES,
-        acceptPrefix: 'image/',
-      })
+      const list = Array.from(files).slice(0, room)
+      const urls = []
+      for (const file of list) {
+        if (!file.type.startsWith('image/')) throw new Error('نوع الملف غير مدعوم')
+        if (file.size > MAX_IMAGE_FILE_BYTES) throw new Error(`صورة كبيرة جداً (الحد ${Math.round(MAX_IMAGE_FILE_BYTES / 1048576)} ميجا)`)
+        urls.push(await uploadImageToStorage(file, 'banners'))
+      }
       setBannerUrls((prev) => [...prev, ...urls].slice(0, MAX_HEADER_BANNERS))
     } catch (err) {
       setBannerMsg(err?.message || 'خطأ في رفع الصور')
@@ -425,12 +439,11 @@ export default function Admin() {
     if (!files?.length) return
     setCatMsg('')
     try {
-      const urls = await readFilesAsDataUrls(files, {
-        maxCount: 1,
-        maxBytesPerFile: MAX_IMAGE_FILE_BYTES,
-        acceptPrefix: 'image/',
-      })
-      if (urls[0]) setNewCatImgDraft(urls[0])
+      const file = files[0]
+      if (!file.type.startsWith('image/')) throw new Error('نوع الملف غير مدعوم')
+      if (file.size > MAX_IMAGE_FILE_BYTES) throw new Error(`صورة كبيرة جداً (الحد ${Math.round(MAX_IMAGE_FILE_BYTES / 1048576)} ميجا)`)
+      const url = await uploadImageToStorage(file, 'categories')
+      setNewCatImgDraft(url)
     } catch (err) {
       setCatMsg(err?.message || 'خطأ في الصورة')
     }
