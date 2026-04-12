@@ -151,6 +151,21 @@ const DEFAULT_RATING = 4.6
 const DEFAULT_REVIEW_COUNT = 48
 const DEFAULT_SOLD_COUNT = 320
 
+const EXTRA_LOCAL_KEY = 'taager_extra_products'
+
+function readExtraLocal() {
+  try {
+    const raw = localStorage.getItem(EXTRA_LOCAL_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch { return [] }
+}
+
+function saveExtraLocal(list) {
+  try { localStorage.setItem(EXTRA_LOCAL_KEY, JSON.stringify(list)) } catch {}
+}
+
 let extraProductsCache = null
 let productEditsCache = null
 let trashCache = null
@@ -159,22 +174,27 @@ let trashCache = null
 
 async function readExtraRaw() {
   if (extraProductsCache !== null) return extraProductsCache
-  if (!supabase) { extraProductsCache = []; return [] }
-  // retry once on timeout
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const { data, error } = await supabase.from('extra_products').select('id, data')
-    if (error) {
-      console.error('[store] extra_products fetch error:', error)
-      if (attempt === 0) continue // retry
-      extraProductsCache = []
-      return []
-    }
-    extraProductsCache = Array.isArray(data) ? data.map((r) => ({ ...r.data, id: r.id })) : []
-    console.log('[store] extra_products loaded:', extraProductsCache.length, 'products')
-    return extraProductsCache
+  // Load from localStorage immediately (no network needed)
+  const local = readExtraLocal()
+  if (local.length > 0) {
+    extraProductsCache = local
   }
-  extraProductsCache = []
-  return []
+  // Try Supabase (may be slow/timeout on free tier)
+  if (supabase) {
+    const { data, error } = await supabase.from('extra_products').select('id, data')
+    if (!error && Array.isArray(data)) {
+      extraProductsCache = data.map((r) => ({ ...r.data, id: r.id }))
+      saveExtraLocal(extraProductsCache)
+      console.log('[store] extra_products loaded from Supabase:', extraProductsCache.length)
+    } else if (error) {
+      console.error('[store] extra_products fetch error:', error)
+      // keep localStorage data
+      if (!extraProductsCache) extraProductsCache = []
+    }
+  } else {
+    if (!extraProductsCache) extraProductsCache = []
+  }
+  return extraProductsCache
 }
 
 async function getEditsMap() {
@@ -307,6 +327,7 @@ export async function softDeleteProduct(productId) {
 
   if (id.startsWith('custom-')) {
     extraProductsCache = (await readExtraRaw()).filter((p) => p.id !== id)
+    saveExtraLocal(extraProductsCache)
     if (supabase) await supabase.from('extra_products').delete().eq('id', id)
     const edits = await getEditsMap()
     if (edits[id]) {
@@ -336,6 +357,7 @@ export async function restoreProductFromTrash(productId) {
     if (!extra.some((p) => p.id === id)) {
       extra.push(entry.product)
       extraProductsCache = extra
+      saveExtraLocal(extra)
       if (supabase) await supabase.from('extra_products').upsert({ id, data: entry.product })
     }
   } else {
@@ -374,6 +396,7 @@ export async function saveProduct(productId, payload) {
       if (idx < 0) return false
       raw[idx] = { ...raw[idx], ...payload }
       extraProductsCache = raw
+      saveExtraLocal(raw)
       if (supabase) await supabase.from('extra_products').upsert({ id, data: raw[idx] })
       const edits = await getEditsMap()
       if (edits[id]) {
@@ -422,12 +445,12 @@ export async function addExtraProduct(product) {
     const extra = await readExtraRaw()
     extra.push(p)
     extraProductsCache = extra
+    // Save to localStorage immediately (survives refresh even if Supabase is down)
+    saveExtraLocal(extra)
     if (supabase) {
       const { error } = await supabase.from('extra_products').insert({ id, data: p })
       if (error) console.error('[addExtraProduct] Supabase error:', error)
       else console.log('[addExtraProduct] saved to Supabase:', id)
-    } else {
-      console.warn('[addExtraProduct] supabase not connected — product only in memory!')
     }
     notifyStoreUpdate()
     return true
@@ -440,6 +463,7 @@ export async function addExtraProduct(product) {
 export async function removeExtraProduct(id) {
   if (!String(id).startsWith('custom-')) return
   extraProductsCache = (await readExtraRaw()).filter((p) => p.id !== id)
+  saveExtraLocal(extraProductsCache)
   if (supabase) await supabase.from('extra_products').delete().eq('id', id)
   notifyStoreUpdate()
 }
