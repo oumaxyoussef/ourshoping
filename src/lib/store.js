@@ -21,7 +21,7 @@ export const DEFAULT_HEADER_BANNERS = [
 async function sbGetConfig(key, fallback) {
   try {
     if (!supabase) return fallback
-    const { data } = await supabase.from('store_config').select('value').eq('key', key).single()
+    const { data } = await supabase.from('store_config').select('value').eq('key', key).maybeSingle()
     return data ? data.value : fallback
   } catch {
     return fallback

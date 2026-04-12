@@ -6,14 +6,12 @@ import { hydrateStoreCaches } from './lib/store.js'
 
 const rootEl = document.getElementById('root')
 
-function renderApp() {
-  createRoot(rootEl).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  )
-}
+// Render immediately — don't wait for Supabase
+createRoot(rootEl).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
 
-hydrateStoreCaches().then(renderApp).catch(() => {
-  renderApp()
-})
+// Hydrate caches in background
+hydrateStoreCaches().catch(() => {})
