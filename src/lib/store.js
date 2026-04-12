@@ -18,11 +18,18 @@ export const DEFAULT_HEADER_BANNERS = [
 
 // ─── Supabase config helpers ──────────────────────────────────────────────────
 
+const CONFIG_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+const configCache = new Map() // key → { value, ts }
+
 async function sbGetConfig(key, fallback) {
   try {
     if (!supabase) return fallback
+    const cached = configCache.get(key)
+    if (cached && Date.now() - cached.ts < CONFIG_CACHE_TTL_MS) return cached.value
     const { data } = await supabase.from('store_config').select('value').eq('key', key).maybeSingle()
-    return data ? data.value : fallback
+    const value = data ? data.value : fallback
+    configCache.set(key, { value, ts: Date.now() })
+    return value
   } catch {
     return fallback
   }
@@ -30,6 +37,7 @@ async function sbGetConfig(key, fallback) {
 
 async function sbSetConfig(key, value) {
   if (!supabase) return
+  configCache.set(key, { value, ts: Date.now() }) // update cache immediately
   await supabase.from('store_config').upsert({ key, value })
 }
 
@@ -284,7 +292,11 @@ async function readExtraRaw() {
 
   // Always try Supabase if we haven't succeeded yet
   if (supabase && !supabaseFetchedExtra) {
-    const { data, error } = await supabase.from('extra_products').select('id, data')
+    const { data, error } = await supabase
+      .from('extra_products')
+      .select('id, data')
+      .limit(200) // pagination safety: max 200 products per fetch
+      .order('id', { ascending: false })
     if (!error && Array.isArray(data)) {
       const prev = extraProductsCache.length
       extraProductsCache = data.map((r) => ({ ...r.data, id: r.id }))
