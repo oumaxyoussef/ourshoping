@@ -449,9 +449,9 @@ export default function Storefront() {
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="flex items-center justify-between gap-3 sm:justify-start sm:gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-xl font-extrabold tracking-tight text-temu sm:text-2xl">
+                <a href="/" className="text-xl font-extrabold tracking-tight text-temu sm:text-2xl hover:opacity-80 transition-opacity">
                   OurShoping
-                </span>
+                </a>
               </div>
               {country && (
                 <div className="sm:hidden">
