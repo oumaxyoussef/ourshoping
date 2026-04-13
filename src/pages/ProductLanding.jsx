@@ -72,9 +72,13 @@ export default function ProductLanding() {
   const { productId } = useParams()
   const [searchParams] = useSearchParams()
   const [productsList, setProductsList] = useState([])
+  const [loadingProducts, setLoadingProducts] = useState(true)
 
   useEffect(() => {
-    getMergedProducts().then(setProductsList)
+    getMergedProducts().then((list) => {
+      setProductsList(list)
+      setLoadingProducts(false)
+    })
   }, [])
 
   useEffect(() => {
@@ -274,6 +278,13 @@ export default function ProductLanding() {
   }
 
   if (!product) {
+    if (loadingProducts) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-gray-50" dir="rtl">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-temu border-t-transparent" />
+        </div>
+      )
+    }
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-16 text-center" dir="rtl">
         <h1 className="text-xl font-extrabold text-gray-900">المنتج غير متوفر</h1>
