@@ -2,6 +2,7 @@ import { formatMoney } from '../lib/money.js'
 import {
   nationalPhoneDigitsForPrefix,
   phoneRestPlaceholder,
+  sanitizePhoneRest,
 } from '../lib/countries.js'
 import {
   convertSarToCurrency,
@@ -191,9 +192,7 @@ export default function CheckoutModal({
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    phoneRest: e.target.value
-                      .replace(/\D/g, '')
-                      .slice(0, phoneMaxDigits),
+                    phoneRest: sanitizePhoneRest(e.target.value).slice(0, phoneMaxDigits),
                   }))
                 }
                 className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-base outline-none focus:border-temu"

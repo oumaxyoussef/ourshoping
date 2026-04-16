@@ -31,6 +31,7 @@ import {
   getStoredCountry,
   isValidFullPhone,
   nationalPhoneDigitsForPrefix,
+  sanitizePhoneRest,
 } from '../lib/countries.js'
 
 const FLASH_KEY = 'flashSaleEndsAt'

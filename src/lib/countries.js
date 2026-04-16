@@ -100,10 +100,21 @@ export function phoneRestPlaceholder(prefix) {
 }
 
 /**
+ * ينظف الرقم الوطني: يزيل الأحرف غير الرقمية والصفر البادئ اختيارياً.
+ * مثال: "01234567890" ← "1234567890"
+ */
+export function sanitizePhoneRest(value) {
+  const digits = String(value).replace(/\D/g, '')
+  // إذا بدأ الرقم بصفر (مثل 01x في مصر) نحذف الصفر تلقائياً
+  return digits.startsWith('0') ? digits.slice(1) : digits
+}
+
+/**
  * رقم كامل بصيغة دولية: +966/+971 تسعة أرقام، +20/+964 عشرة، +968 ثمانية.
  */
 export function isValidFullPhone(fullPhone) {
-  const s = String(fullPhone).replace(/\s/g, '')
+  // normalize: strip leading 0 after country code if present (e.g. +20 0xxxxxxxxxx → +20 xxxxxxxxxx)
+  const s = String(fullPhone).replace(/\s/g, '').replace(/^(\+\d{1,4})0(\d)/, '$1$2')
   if (/^\+966[0-9]{9}$/.test(s)) return true
   if (/^\+971[0-9]{9}$/.test(s)) return true
   if (/^\+20[0-9]{10}$/.test(s)) return true

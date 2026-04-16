@@ -22,6 +22,7 @@ import {
   getStoredCountry,
   isValidFullPhone,
   nationalPhoneDigitsForPrefix,
+  sanitizePhoneRest,
 } from '../lib/countries.js'
 import { trackCheckoutLead, trackProductView } from '../tracking.js'
 
