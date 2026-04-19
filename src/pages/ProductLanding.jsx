@@ -385,7 +385,7 @@ export default function ProductLanding() {
           >
             <img
               src={coverSrc}
-              alt=""
+              alt={product.title}
               className="h-full w-full object-cover transition-transform duration-300 group-hover/img:scale-105"
             />
             <span className="absolute start-3 top-3 rounded-md bg-temu px-2 py-0.5 text-xs font-extrabold text-white shadow">

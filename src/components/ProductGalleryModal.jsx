@@ -158,7 +158,7 @@ function getObjectFitContainLocal(img) {
   return { offX, offY, drawW, drawH, boxW: r.width, boxH: r.height }
 }
 
-function ZoomableImage({ src }) {
+function ZoomableImage({ src, alt = '' }) {
   const [origin, setOrigin] = useState({ x: 50, y: 50 })
   const [hover, setHover] = useState(false)
   const [mobileZoom, setMobileZoom] = useState(false)
@@ -208,7 +208,7 @@ function ZoomableImage({ src }) {
         <img
           ref={imgRef}
           src={hi}
-          alt=""
+          alt={alt}
           className="h-auto max-h-[min(70vh,600px)] w-full object-contain transition-transform duration-100 ease-out select-none"
           style={{
             transform: zoomed ? `scale(${ZOOM_SCALE})` : 'scale(1)',
@@ -364,7 +364,7 @@ export default function ProductGalleryModal({
             </div>
 
             <div className="order-1 min-w-0 flex-1 sm:order-2">
-              {slide?.kind === 'image' && <ZoomableImage src={slide.src} />}
+              {slide?.kind === 'image' && <ZoomableImage src={slide.src} alt={product.title} />}
               {slide?.kind === 'video' && (
                 <div className="overflow-hidden rounded-xl bg-black">
                   <video

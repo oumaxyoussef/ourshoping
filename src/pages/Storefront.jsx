@@ -144,7 +144,7 @@ function ProductTile({ p, country, onOpenGallery, onCheckout }) {
       >
         <img
           src={coverSrc}
-          alt=""
+          alt={p.title}
           className="h-full w-full object-contain object-center transition-transform duration-300 ease-out group-hover/img:scale-[1.03]"
           loading="lazy"
         />
@@ -552,7 +552,7 @@ export default function Storefront() {
                         {c.imageUrl ? (
                           <img
                             src={c.imageUrl}
-                            alt=""
+                            alt={c.nameAr}
                             className="h-9 w-9 shrink-0 rounded-md object-cover"
                           />
                         ) : (
