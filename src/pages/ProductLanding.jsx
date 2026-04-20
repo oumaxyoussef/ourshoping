@@ -441,9 +441,6 @@ export default function ProductLanding() {
             >
               اشترِ الآن — الدفع عند الاستلام
             </button>
-            <p className="mt-4 text-center text-xs text-gray-400">
-              رابط هذه الصفحة مناسب لإعلانات فيسبوك، جوجل، تيك توك…
-            </p>
           </div>
         </article>
 
