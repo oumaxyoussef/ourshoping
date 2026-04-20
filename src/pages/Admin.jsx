@@ -683,13 +683,17 @@ export default function Admin() {
       return
     }
 
-    const added = await addExtraProduct(payload)
-    if (!added) {
+    const result = await addExtraProduct(payload)
+    if (!result?.ok) {
       setProductMsg('تعذر حفظ المنتج. أعد المحاولة أو حدّث الصفحة.')
       return
     }
     resetProductForm()
-    setProductMsg('تمت إضافة المنتج.')
+    if (!result.supabaseOk) {
+      setProductMsg('تمت إضافة المنتج محلياً ⚠️ — تعذر الحفظ في Supabase. قد لا يظهر على أجهزة أخرى. تحقق من إعدادات RLS أو الاتصال.')
+    } else {
+      setProductMsg('تمت إضافة المنتج.')
+    }
     setExtra(await getExtraProducts())
   }
 

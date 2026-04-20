@@ -261,7 +261,7 @@ function startBgRetry() {
     if (supabaseFetchedExtra || attempts >= 3) { clearInterval(bgRetryTimer); bgRetryTimer = null; return }
     attempts++
     console.log('[store] background retry: fetching extra_products...')
-    const { data, error } = await supabase.from('extra_products').select('id, data')
+    const { data, error } = await supabase.from('extra_products').select('id, data').order('id', { ascending: false })
     if (!error && Array.isArray(data)) {
       extraProductsCache = data.map((r) => ({ ...r.data, id: r.id }))
       saveExtraLocal(extraProductsCache)
@@ -570,16 +570,24 @@ export async function addExtraProduct(product) {
     extraProductsCache = extra
     // Save to localStorage immediately (survives refresh even if Supabase is down)
     saveExtraLocal(extra)
+    let supabaseOk = false
     if (supabase) {
       const { error } = await supabase.from('extra_products').insert({ id, data: p })
-      if (error) console.error('[addExtraProduct] Supabase error:', error)
-      else console.log('[addExtraProduct] saved to Supabase:', id)
+      if (error) {
+        console.error('[addExtraProduct] Supabase insert failed:', error.message, error)
+        // Reset flag so next readExtraRaw re-syncs from Supabase and catches discrepancies
+        supabaseFetchedExtra = false
+      } else {
+        console.log('[addExtraProduct] saved to Supabase:', id)
+        supabaseOk = true
+      }
     }
     notifyStoreUpdate()
-    return true
+    // Return object so caller can distinguish local-only save vs confirmed Supabase save
+    return { ok: true, supabaseOk }
   } catch (e) {
     console.error('[addExtraProduct] exception:', e)
-    return false
+    return { ok: false, supabaseOk: false }
   }
 }
 
